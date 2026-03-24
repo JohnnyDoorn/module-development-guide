@@ -519,7 +519,7 @@ Remember to Remove browser() Calls
 </section>
 <section id="quick-renv-setup-for-jasptools" class="level2" data-number="7.6">
 <h2 data-number="7.6" class="anchored" data-anchor-id="quick-renv-setup-for-jasptools"><span class="header-section-number">7.6</span> Quick renv Setup for jaspTools</h2>
-<p>If your module uses renv (which it should — see <a href="setup.html#sec-renv"><span>Section&nbsp;2.3</span></a>), run this bootstrap before using jaspTools:</p>
+<p>If your module uses renv (which it should — see <a href="setup.html#sec-renv"><span>Section&nbsp;2.4</span></a>), run this bootstrap before using jaspTools:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">GITHUB_PAT =</span> <span class="st">"&lt;your PAT&gt;"</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>(renv<span class="sc">::</span><span class="fu">project</span>())) {</span>

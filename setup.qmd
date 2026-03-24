@@ -41,6 +41,76 @@ flatpak install org.kde.Sdk   # choose version 6.7
 
 :::
 
+## Install and configure Git {#sec-git-setup}
+
+[Git](https://git-scm.com/) is a version control system that tracks changes to your code over time. It lets you undo mistakes, work on different features in parallel (via *branches*), and collaborate with others through platforms like [GitHub](https://github.com). All JASP modules are hosted on GitHub, so you'll need Git throughout your development workflow.
+
+### Install Git
+
+::: {.panel-tabset}
+
+#### macOS
+
+Git comes with the Xcode Command Line Tools. Open a terminal and run:
+
+```bash
+git --version
+```
+
+If Git isn't installed, macOS will prompt you to install the tools. Alternatively, install via [Homebrew](https://brew.sh/): `brew install git`.
+
+#### Windows
+
+Download and install from [git-scm.com/downloads](https://git-scm.com/downloads/win). The default settings are fine. This also installs **Git Bash**, a terminal you can use for Git commands.
+
+#### Linux
+
+```bash
+# Debian/Ubuntu
+sudo apt install git
+
+# Fedora
+sudo dnf install git
+```
+
+:::
+
+### Configure your identity
+
+Git tags every commit with your name and email. Set these once:
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "you@example.org"
+```
+
+### Create a GitHub account
+
+If you don't have one yet, sign up at [github.com](https://github.com). JASP modules live under the [jasp-stats](https://github.com/jasp-stats) organisation.
+
+### Key Git concepts
+
+You don't need to be a Git expert to develop JASP modules, but a few concepts come up constantly:
+
+| Concept | What it means |
+|---------|--------------|
+| **Repository (repo)** | A project folder tracked by Git |
+| **Clone** | Download a copy of a remote repository to your computer |
+| **Fork** | Create your own copy of someone else's repository on GitHub |
+| **Commit** | Save a snapshot of your changes |
+| **Branch** | A parallel line of development (e.g., `feature/my-analysis`) |
+| **Push / Pull** | Upload your commits to GitHub / download others' commits |
+| **Pull request (PR)** | Ask the maintainers to merge your branch into the main project |
+
+### Learning resources
+
+- [Git User Manual](https://git-scm.com/docs/user-manual.html) — the official comprehensive reference
+- [Pro Git book](https://git-scm.com/book/en/v2) — free online book, excellent for beginners and advanced users
+- [GitHub Skills](https://skills.github.com/) — interactive tutorials for learning Git with GitHub
+- [Oh My Git!](https://ohmygit.org/) — a game to learn Git visually
+
+For the JASP-specific Git workflow (forking, branching, pull requests), see the [Git Workflow](git-workflow.qmd) chapter.
+
 ## Fork and clone the module template
 
 1. Go to [jaspModuleTemplate](https://github.com/jasp-stats/jaspModuleTemplate) and click **Fork**.
@@ -122,15 +192,6 @@ Note the library path where the module is installed — you'll need it for devel
 8. Click the **+** icon (top-right) → **Install Developer Module**
 
 ![Installing the developer module](img/dev-jasp.png)
-
-### Alternative: non-renv mode (deprecated)
-
-This method lets JASP handle the R installation internally. It ignores lockfiles and can break when CRAN packages update unexpectedly. Not recommended.
-
-1. In **Preferences → Advanced**, uncheck **Enable renv mode**
-2. Set the path to your module's **source code** directory
-
-![Non-renv setup (deprecated)](img/dev-install-oldschool.png)
 
 ## GitHub Personal Access Token {#sec-pat}
 

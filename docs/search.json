@@ -14,18 +14,11 @@
     "text": "What is a JASP module?\nA JASP module is an extension that adds new statistical analyses to JASP. Modules appear in the ribbon bar at the top of JASP and can be installed via the + icon.\n\n\n\nCore modules in the JASP ribbon\n\n\n\n\n\nAdditional modules available for installation\n\n\nInternally, a JASP module is an R package with additional QML files for the graphical interface:\n\n\n\nThe three building blocks of a JASP module\n\n\n\nR code — your statistical computations, using any CRAN/Bioconductor packages\nQML interface — the options panel users interact with\njaspResults — the bridge that renders tables, plots, and text in JASP’s output"
   },
   {
-    "objectID": "index.html#who-is-this-guide-for",
-    "href": "index.html#who-is-this-guide-for",
-    "title": "JASP Module Development Guide",
-    "section": "Who is this guide for?",
-    "text": "Who is this guide for?\nAnyone who wants to create or contribute to JASP modules. You need:\n\nBasic R — functions, data manipulation, data.frame operations\nBasic Git/GitHub — clone, commit, push, pull requests\nFamiliarity with R packaging — helpful but not required (we’ll cover the essentials)\nQML knowledge — not required; you’ll learn it here\n\n\n\n\n\ngraph TD\n  subgraph Minimum\n    git --&gt; github\n    R --&gt; Functions\n  end\n  Template --&gt; QML\n  Functions --&gt; Packaging"
-  },
-  {
     "objectID": "index.html#how-this-guide-is-organised",
     "href": "index.html#how-this-guide-is-organised",
     "title": "JASP Module Development Guide",
     "section": "How this guide is organised",
-    "text": "How this guide is organised\n\n\n\n\n\n\n\nPart\nWhat you’ll learn\n\n\n\n\nI. Getting Started\nEnvironment setup, module template, file structure\n\n\nII. Building Your Module\nR backend (jaspResults API), QML interface, the QML↔︎R connection\n\n\nIII. Quality & Standards\nCoding style, error messages, i18n, testing, backward compatibility\n\n\nIV. Publishing & Maintenance\nVersioning, releasing, community/official module submission, Git workflow\n\n\nV. Advanced Topics\nAI-assisted development, building JASP from source, debugging, licensing"
+    "text": "How this guide is organised\nThe guide follows the natural lifecycle of building a JASP module, from first setup to publication.\nBuilding Your Module walks you through the core development process. You’ll learn how a module is structured, how to design the user-facing options panel in QML, how to write the R analysis backend using the jaspResults API, how QML and R are connected, and how to use jaspTools during development.\nImproving Your Module covers everything that makes your module robust and maintainable. This includes coding standards, writing helpful error messages, testing your analyses, debugging when things go wrong, translating your module for international users, and handling backward compatibility when upgrading your QML interface.\nFinalizing Your Module guides you through the steps to share your work with the world. You’ll learn about versioning, publishing to the JASP Module Library, the Git workflow for contributing to JASP, licensing, building JASP from source (for core developers), and using AI tools to assist your development."
   },
   {
     "objectID": "index.html#quick-start",
@@ -40,6 +33,13 @@
     "title": "2  Setting Up Your Environment",
     "section": "Install JASP (nightly build)",
     "text": "Install JASP (nightly build)\nYou need a recent version of JASP to develop modules. Nightly builds include the latest features.\n\nWindows & macOSLinux\n\n\nDownload the latest nightly build for your platform.\n\n\n# 1. Install flatpak if needed: https://flatpak.org/setup/\n# 2. Add the beta repository\nflatpak remote-add --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo\n\n# 3. Install JASP beta\nflatpak install flathub-beta org.jaspstats.JASP\n\n# 4. Launch in development mode\nflatpak run --branch=beta --devel org.jaspstats.JASP\n\n\n\n\n\n\nWarning\n\n\n\nJASP remembers the branch it was launched from. To switch back to stable: flatpak run --branch=stable org.jaspstats.JASP\n\n\nIf you see runtime/org.kde.Sdk/x86_64/6.7 not installed, fix it with:\nflatpak install org.kde.Sdk   # choose version 6.7"
+  },
+  {
+    "objectID": "setup.html#sec-git-setup",
+    "href": "setup.html#sec-git-setup",
+    "title": "2  Setting Up Your Environment",
+    "section": "Install and configure Git",
+    "text": "Install and configure Git\nGit is a version control system that tracks changes to your code over time. It lets you undo mistakes, work on different features in parallel (via branches), and collaborate with others through platforms like GitHub. All JASP modules are hosted on GitHub, so you’ll need Git throughout your development workflow.\n\nInstall Git\n\nmacOSWindowsLinux\n\n\nGit comes with the Xcode Command Line Tools. Open a terminal and run:\ngit --version\nIf Git isn’t installed, macOS will prompt you to install the tools. Alternatively, install via Homebrew: brew install git.\n\n\nDownload and install from git-scm.com/downloads. The default settings are fine. This also installs Git Bash, a terminal you can use for Git commands.\n\n\n# Debian/Ubuntu\nsudo apt install git\n\n# Fedora\nsudo dnf install git\n\n\n\n\n\nConfigure your identity\nGit tags every commit with your name and email. Set these once:\ngit config --global user.name \"Your Name\"\ngit config --global user.email \"you@example.org\"\n\n\nCreate a GitHub account\nIf you don’t have one yet, sign up at github.com. JASP modules live under the jasp-stats organisation.\n\n\nKey Git concepts\nYou don’t need to be a Git expert to develop JASP modules, but a few concepts come up constantly:\n\n\n\n\n\n\n\nConcept\nWhat it means\n\n\n\n\nRepository (repo)\nA project folder tracked by Git\n\n\nClone\nDownload a copy of a remote repository to your computer\n\n\nFork\nCreate your own copy of someone else’s repository on GitHub\n\n\nCommit\nSave a snapshot of your changes\n\n\nBranch\nA parallel line of development (e.g., feature/my-analysis)\n\n\nPush / Pull\nUpload your commits to GitHub / download others’ commits\n\n\nPull request (PR)\nAsk the maintainers to merge your branch into the main project\n\n\n\n\n\nLearning resources\n\nGit User Manual — the official comprehensive reference\nPro Git book — free online book, excellent for beginners and advanced users\nGitHub Skills — interactive tutorials for learning Git with GitHub\nOh My Git! — a game to learn Git visually\n\nFor the JASP-specific Git workflow (forking, branching, pull requests), see the Git Workflow chapter."
   },
   {
     "objectID": "setup.html#fork-and-clone-the-module-template",
@@ -67,7 +67,7 @@
     "href": "setup.html#sec-dev-mode",
     "title": "2  Setting Up Your Environment",
     "section": "Configure JASP for development",
-    "text": "Configure JASP for development\n\nRecommended: renv mode\n\nOpen JASP\nMenu (☰) → Preferences → Advanced\nCheck Developer mode\nCheck Enable renv mode\nSet the libpath where you installed the module\nEnter the module name (as listed in DESCRIPTION)\n\n\n\n\nDeveloper module setup with renv\n\n\n\nGo back to the main JASP window\nClick the + icon (top-right) → Install Developer Module\n\n\n\n\nInstalling the developer module\n\n\n\n\nAlternative: non-renv mode (deprecated)\nThis method lets JASP handle the R installation internally. It ignores lockfiles and can break when CRAN packages update unexpectedly. Not recommended.\n\nIn Preferences → Advanced, uncheck Enable renv mode\nSet the path to your module’s source code directory\n\n\n\n\nNon-renv setup (deprecated)"
+    "text": "Configure JASP for development\n\nRecommended: renv mode\n\nOpen JASP\nMenu (☰) → Preferences → Advanced\nCheck Developer mode\nCheck Enable renv mode\nSet the libpath where you installed the module\nEnter the module name (as listed in DESCRIPTION)\n\n\n\n\nDeveloper module setup with renv\n\n\n\nGo back to the main JASP window\nClick the + icon (top-right) → Install Developer Module\n\n\n\n\nInstalling the developer module"
   },
   {
     "objectID": "setup.html#sec-pat",
@@ -340,7 +340,7 @@
     "href": "jasptools-workflow.html#quick-renv-setup-for-jasptools",
     "title": "7  Running & Debugging with jaspTools",
     "section": "7.6 Quick renv Setup for jaspTools",
-    "text": "7.6 Quick renv Setup for jaspTools\nIf your module uses renv (which it should — see Section 2.3), run this bootstrap before using jaspTools:\nSys.setenv(GITHUB_PAT = \"&lt;your PAT&gt;\")\n\nif (is.null(renv::project())) {\n  message(\"This isn't an active renv project.\")\n  renv::activate()\n} else {\n  message(\"We're in an active renv project.\")\n}\n\nmessage(\"Restoring/synchronizing the project library.\")\nrenv::restore()\n\nmessage(\"Installing the package.\")\nrenv::install(\".\")\n\nmessage(\"R libPath for developer mode:\\n\", .libPaths()[1])\nThe last line prints the library path for your installed module. This is the path you enter in JASP’s Preferences → Advanced → Developer mode → libpath so JASP loads your locally built module."
+    "text": "7.6 Quick renv Setup for jaspTools\nIf your module uses renv (which it should — see Section 2.4), run this bootstrap before using jaspTools:\nSys.setenv(GITHUB_PAT = \"&lt;your PAT&gt;\")\n\nif (is.null(renv::project())) {\n  message(\"This isn't an active renv project.\")\n  renv::activate()\n} else {\n  message(\"We're in an active renv project.\")\n}\n\nmessage(\"Restoring/synchronizing the project library.\")\nrenv::restore()\n\nmessage(\"Installing the package.\")\nrenv::install(\".\")\n\nmessage(\"R libPath for developer mode:\\n\", .libPaths()[1])\nThe last line prints the library path for your installed module. This is the path you enter in JASP’s Preferences → Advanced → Developer mode → libpath so JASP loads your locally built module."
   },
   {
     "objectID": "jasptools-workflow.html#common-pitfalls",

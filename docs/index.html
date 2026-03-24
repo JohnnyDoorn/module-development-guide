@@ -61,9 +61,6 @@ ul.task-list li input[type="checkbox"] {
     "search-submit-button-title": "Submit"
   }
 }</script>
-<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
-<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
-<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 <link rel="stylesheet" href="custom.css">
@@ -307,7 +304,6 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#sec-welcome" id="toc-sec-welcome" class="nav-link active" data-scroll-target="#sec-welcome">Welcome &amp; Overview</a>
   <ul class="collapse">
   <li><a href="#what-is-a-jasp-module" id="toc-what-is-a-jasp-module" class="nav-link" data-scroll-target="#what-is-a-jasp-module">What is a JASP module?</a></li>
-  <li><a href="#who-is-this-guide-for" id="toc-who-is-this-guide-for" class="nav-link" data-scroll-target="#who-is-this-guide-for">Who is this guide for?</a></li>
   <li><a href="#how-this-guide-is-organised" id="toc-how-this-guide-is-organised" class="nav-link" data-scroll-target="#how-this-guide-is-organised">How this guide is organised</a></li>
   <li><a href="#quick-start" id="toc-quick-start" class="nav-link" data-scroll-target="#quick-start">Quick start</a></li>
   </ul></li>
@@ -378,68 +374,12 @@ ul.task-list li input[type="checkbox"] {
 <li><strong>jaspResults</strong> — the bridge that renders tables, plots, and text in JASP’s output</li>
 </ul>
 </section>
-<section id="who-is-this-guide-for" class="level2">
-<h2 class="anchored" data-anchor-id="who-is-this-guide-for">Who is this guide for?</h2>
-<p>Anyone who wants to create or contribute to JASP modules. You need:</p>
-<ul>
-<li><strong>Basic R</strong> — functions, data manipulation, <code>data.frame</code> operations</li>
-<li><strong>Basic Git/GitHub</strong> — clone, commit, push, pull requests</li>
-<li><strong>Familiarity with R packaging</strong> — helpful but not required (we’ll cover the essentials)</li>
-<li><strong>QML knowledge</strong> — not required; you’ll learn it here</li>
-</ul>
-<div class="cell">
-<div class="cell-output-display">
-<div>
-<div>
-<pre class="mermaid mermaid-js">graph TD
-  subgraph Minimum
-    git --&gt; github
-    R --&gt; Functions
-  end
-  Template --&gt; QML
-  Functions --&gt; Packaging
-</pre>
-</div>
-</div>
-</div>
-</div>
-</section>
 <section id="how-this-guide-is-organised" class="level2">
 <h2 class="anchored" data-anchor-id="how-this-guide-is-organised">How this guide is organised</h2>
-<table class="table">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Part</th>
-<th>What you’ll learn</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>I. Getting Started</strong></td>
-<td>Environment setup, module template, file structure</td>
-</tr>
-<tr class="even">
-<td><strong>II. Building Your Module</strong></td>
-<td>R backend (jaspResults API), QML interface, the QML↔︎R connection</td>
-</tr>
-<tr class="odd">
-<td><strong>III. Quality &amp; Standards</strong></td>
-<td>Coding style, error messages, i18n, testing, backward compatibility</td>
-</tr>
-<tr class="even">
-<td><strong>IV. Publishing &amp; Maintenance</strong></td>
-<td>Versioning, releasing, community/official module submission, Git workflow</td>
-</tr>
-<tr class="odd">
-<td><strong>V. Advanced Topics</strong></td>
-<td>AI-assisted development, building JASP from source, debugging, licensing</td>
-</tr>
-</tbody>
-</table>
+<p>The guide follows the natural lifecycle of building a JASP module, from first setup to publication.</p>
+<p><strong>Building Your Module</strong> walks you through the core development process. You’ll learn how a module is structured, how to design the user-facing options panel in QML, how to write the R analysis backend using the jaspResults API, how QML and R are connected, and how to use jaspTools during development.</p>
+<p><strong>Improving Your Module</strong> covers everything that makes your module robust and maintainable. This includes coding standards, writing helpful error messages, testing your analyses, debugging when things go wrong, translating your module for international users, and handling backward compatibility when upgrading your QML interface.</p>
+<p><strong>Finalizing Your Module</strong> guides you through the steps to share your work with the world. You’ll learn about versioning, publishing to the JASP Module Library, the Git workflow for contributing to JASP, licensing, building JASP from source (for core developers), and using AI tools to assist your development.</p>
 </section>
 <section id="quick-start" class="level2">
 <h2 class="anchored" data-anchor-id="quick-start">Quick start</h2>

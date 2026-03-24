@@ -338,13 +338,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#install-jasp-nightly-build" id="toc-install-jasp-nightly-build" class="nav-link active" data-scroll-target="#install-jasp-nightly-build">Install JASP (nightly build)</a></li>
+  <li><a href="#sec-git-setup" id="toc-sec-git-setup" class="nav-link" data-scroll-target="#sec-git-setup">Install and configure Git</a>
+  <ul class="collapse">
+  <li><a href="#install-git" id="toc-install-git" class="nav-link" data-scroll-target="#install-git">Install Git</a></li>
+  <li><a href="#configure-your-identity" id="toc-configure-your-identity" class="nav-link" data-scroll-target="#configure-your-identity">Configure your identity</a></li>
+  <li><a href="#create-a-github-account" id="toc-create-a-github-account" class="nav-link" data-scroll-target="#create-a-github-account">Create a GitHub account</a></li>
+  <li><a href="#key-git-concepts" id="toc-key-git-concepts" class="nav-link" data-scroll-target="#key-git-concepts">Key Git concepts</a></li>
+  <li><a href="#learning-resources" id="toc-learning-resources" class="nav-link" data-scroll-target="#learning-resources">Learning resources</a></li>
+  </ul></li>
   <li><a href="#fork-and-clone-the-module-template" id="toc-fork-and-clone-the-module-template" class="nav-link" data-scroll-target="#fork-and-clone-the-module-template">Fork and clone the module template</a></li>
   <li><a href="#sec-renv" id="toc-sec-renv" class="nav-link" data-scroll-target="#sec-renv">Package Management with renv</a></li>
   <li><a href="#install-your-module-as-an-r-package" id="toc-install-your-module-as-an-r-package" class="nav-link" data-scroll-target="#install-your-module-as-an-r-package">Install your module as an R package</a></li>
   <li><a href="#sec-dev-mode" id="toc-sec-dev-mode" class="nav-link" data-scroll-target="#sec-dev-mode">Configure JASP for development</a>
   <ul class="collapse">
   <li><a href="#recommended-renv-mode" id="toc-recommended-renv-mode" class="nav-link" data-scroll-target="#recommended-renv-mode">Recommended: renv mode</a></li>
-  <li><a href="#alternative-non-renv-mode-deprecated" id="toc-alternative-non-renv-mode-deprecated" class="nav-link" data-scroll-target="#alternative-non-renv-mode-deprecated">Alternative: non-renv mode (deprecated)</a></li>
   </ul></li>
   <li><a href="#sec-pat" id="toc-sec-pat" class="nav-link" data-scroll-target="#sec-pat">GitHub Personal Access Token</a></li>
   <li><a href="#sec-dev-cycle" id="toc-sec-dev-cycle" class="nav-link" data-scroll-target="#sec-dev-cycle">The development cycle</a></li>
@@ -409,41 +416,134 @@ Warning
 </div>
 </div>
 </section>
+<section id="sec-git-setup" class="level2">
+<h2 class="anchored" data-anchor-id="sec-git-setup">Install and configure Git</h2>
+<p><a href="https://git-scm.com/">Git</a> is a version control system that tracks changes to your code over time. It lets you undo mistakes, work on different features in parallel (via <em>branches</em>), and collaborate with others through platforms like <a href="https://github.com">GitHub</a>. All JASP modules are hosted on GitHub, so you’ll need Git throughout your development workflow.</p>
+<section id="install-git" class="level3">
+<h3 class="anchored" data-anchor-id="install-git">Install Git</h3>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">macOS</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">Windows</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">Linux</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<p>Git comes with the Xcode Command Line Tools. Open a terminal and run:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> <span class="at">--version</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If Git isn’t installed, macOS will prompt you to install the tools. Alternatively, install via <a href="https://brew.sh/">Homebrew</a>: <code>brew install git</code>.</p>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<p>Download and install from <a href="https://git-scm.com/downloads/win">git-scm.com/downloads</a>. The default settings are fine. This also installs <strong>Git Bash</strong>, a terminal you can use for Git commands.</p>
+</div>
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Debian/Ubuntu</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install git</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fedora</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dnf install git</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="configure-your-identity" class="level3">
+<h3 class="anchored" data-anchor-id="configure-your-identity">Configure your identity</h3>
+<p>Git tags every commit with your name and email. Set these once:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> config <span class="at">--global</span> user.name <span class="st">"Your Name"</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> config <span class="at">--global</span> user.email <span class="st">"you@example.org"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="create-a-github-account" class="level3">
+<h3 class="anchored" data-anchor-id="create-a-github-account">Create a GitHub account</h3>
+<p>If you don’t have one yet, sign up at <a href="https://github.com">github.com</a>. JASP modules live under the <a href="https://github.com/jasp-stats">jasp-stats</a> organisation.</p>
+</section>
+<section id="key-git-concepts" class="level3">
+<h3 class="anchored" data-anchor-id="key-git-concepts">Key Git concepts</h3>
+<p>You don’t need to be a Git expert to develop JASP modules, but a few concepts come up constantly:</p>
+<table class="table">
+<colgroup>
+<col style="width: 39%">
+<col style="width: 60%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Concept</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Repository (repo)</strong></td>
+<td>A project folder tracked by Git</td>
+</tr>
+<tr class="even">
+<td><strong>Clone</strong></td>
+<td>Download a copy of a remote repository to your computer</td>
+</tr>
+<tr class="odd">
+<td><strong>Fork</strong></td>
+<td>Create your own copy of someone else’s repository on GitHub</td>
+</tr>
+<tr class="even">
+<td><strong>Commit</strong></td>
+<td>Save a snapshot of your changes</td>
+</tr>
+<tr class="odd">
+<td><strong>Branch</strong></td>
+<td>A parallel line of development (e.g., <code>feature/my-analysis</code>)</td>
+</tr>
+<tr class="even">
+<td><strong>Push / Pull</strong></td>
+<td>Upload your commits to GitHub / download others’ commits</td>
+</tr>
+<tr class="odd">
+<td><strong>Pull request (PR)</strong></td>
+<td>Ask the maintainers to merge your branch into the main project</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-resources" class="level3">
+<h3 class="anchored" data-anchor-id="learning-resources">Learning resources</h3>
+<ul>
+<li><a href="https://git-scm.com/docs/user-manual.html">Git User Manual</a> — the official comprehensive reference</li>
+<li><a href="https://git-scm.com/book/en/v2">Pro Git book</a> — free online book, excellent for beginners and advanced users</li>
+<li><a href="https://skills.github.com/">GitHub Skills</a> — interactive tutorials for learning Git with GitHub</li>
+<li><a href="https://ohmygit.org/">Oh My Git!</a> — a game to learn Git visually</li>
+</ul>
+<p>For the JASP-specific Git workflow (forking, branching, pull requests), see the <a href="./git-workflow.html">Git Workflow</a> chapter.</p>
+</section>
+</section>
 <section id="fork-and-clone-the-module-template" class="level2">
 <h2 class="anchored" data-anchor-id="fork-and-clone-the-module-template">Fork and clone the module template</h2>
 <ol type="1">
 <li>Go to <a href="https://github.com/jasp-stats/jaspModuleTemplate">jaspModuleTemplate</a> and click <strong>Fork</strong>.</li>
 <li>Clone your fork:</li>
 </ol>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/<span class="op">&lt;</span>your-username<span class="op">&gt;</span>/jaspModuleTemplate.git</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jaspModuleTemplate</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/<span class="op">&lt;</span>your-username<span class="op">&gt;</span>/jaspModuleTemplate.git</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jaspModuleTemplate</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Alternatively, fork an existing module from <a href="https://github.com/jasp-stats">jasp-stats</a>.</p>
 </section>
 <section id="sec-renv" class="level2">
 <h2 class="anchored" data-anchor-id="sec-renv">Package Management with renv</h2>
 <p>JASP modules use <a href="https://rstudio.github.io/renv/">renv</a> to lock package versions. This ensures that your module builds reproducibly and that collaborators (and CI) use the exact same dependency versions.</p>
 <p>Every module repository should contain a <code>renv.lock</code> file. When you start working on a module, bootstrap the renv environment with this script:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set your GitHub PAT to avoid rate limits during package installation</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">GITHUB_PAT =</span> <span class="st">"&lt;your PAT&gt;"</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Activate the renv project (or confirm it's already active)</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>(renv<span class="sc">::</span><span class="fu">project</span>())) {</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"This isn't an active renv project."</span>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  renv<span class="sc">::</span><span class="fu">activate</span>()</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"We're in an active renv project."</span>)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Install all locked dependencies</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Restoring/synchronizing the project library."</span>)</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">restore</span>()</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Install the module itself into the renv library</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Installing the package."</span>)</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">install</span>(<span class="st">"."</span>)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the library path — you'll need this for JASP developer mode</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"R libPath for developer mode:</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">.libPaths</span>()[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set your GitHub PAT to avoid rate limits during package installation</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">GITHUB_PAT =</span> <span class="st">"&lt;your PAT&gt;"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Activate the renv project (or confirm it's already active)</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>(renv<span class="sc">::</span><span class="fu">project</span>())) {</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"This isn't an active renv project."</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  renv<span class="sc">::</span><span class="fu">activate</span>()</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"We're in an active renv project."</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Install all locked dependencies</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Restoring/synchronizing the project library."</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">restore</span>()</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Install the module itself into the renv library</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Installing the package."</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">install</span>(<span class="st">"."</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the library path — you'll need this for JASP developer mode</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"R libPath for developer mode:</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">.libPaths</span>()[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The last line prints the <strong>library path</strong> for your newly installed module. Copy this path — you will paste it into JASP’s developer mode settings (see <a href="#sec-dev-mode">below</a>).</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -462,9 +562,9 @@ Tip
 <section id="install-your-module-as-an-r-package" class="level2">
 <h2 class="anchored" data-anchor-id="install-your-module-as-an-r-package">Install your module as an R package</h2>
 <p>With renv active, the simplest way is:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">install</span>(<span class="st">"."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">install</span>(<span class="st">"."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Alternatively, from the terminal:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL . <span class="at">--preclean</span> <span class="at">--no-multiarch</span> <span class="at">--with-keep.source</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL . <span class="at">--preclean</span> <span class="at">--no-multiarch</span> <span class="at">--with-keep.source</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Note the library path where the module is installed — you’ll need it for developer mode. Run <code>.libPaths()[1]</code> in R to see it.</p>
 </section>
 <section id="sec-dev-mode" class="level2">
@@ -493,20 +593,6 @@ Tip
 <figure class="figure">
 <p><img src="img/dev-jasp.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Installing the developer module</figcaption>
-</figure>
-</div>
-</section>
-<section id="alternative-non-renv-mode-deprecated" class="level3">
-<h3 class="anchored" data-anchor-id="alternative-non-renv-mode-deprecated">Alternative: non-renv mode (deprecated)</h3>
-<p>This method lets JASP handle the R installation internally. It ignores lockfiles and can break when CRAN packages update unexpectedly. Not recommended.</p>
-<ol type="1">
-<li>In <strong>Preferences → Advanced</strong>, uncheck <strong>Enable renv mode</strong></li>
-<li>Set the path to your module’s <strong>source code</strong> directory</li>
-</ol>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="img/dev-install-oldschool.png" class="img-fluid figure-img"></p>
-<figcaption class="figure-caption">Non-renv setup (deprecated)</figcaption>
 </figure>
 </div>
 </section>
