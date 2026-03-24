@@ -1,5 +1,6 @@
 /.quarto/
 _book/
+docs/
 .Rproj.user/
 .DS_Store
 .copilot-memory.md
