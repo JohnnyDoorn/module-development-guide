@@ -4,26 +4,26 @@ This chapter covers how to submit a new community module, update an existing one
 
 ## Community Module Submission
 
-Community modules are listed in the [jasp-stats-modules](https://github.com/jasp-stats-modules) registry. To add your module:
+Community modules are managed through the [`modules-registry`](https://github.com/jasp-stats-modules/modules-registry) repository on GitHub under the [jasp-stats-modules](https://github.com/jasp-stats-modules) organization. To add your module, choose one of the two options below.
 
 ### Option 1: Contact the Team
 
-Open an issue or send a message on Mattermost. The JASP team will add it for you.
+Open an issue on the [JASP issue tracker](https://github.com/jasp-stats/jasp-issues/issues) or send a message on [Mattermost](https://mattermost.jasp-stats.org). The JASP team will add it for you.
 
 ### Option 2: Pull Request
 
-1. Fork the [`jasp-stats-modules`](https://github.com/jasp-stats-modules) registry repository.
-2. Add a YAML file in the `modules-metadata/` folder:
+1. Fork the [`modules-registry`](https://github.com/jasp-stats-modules/modules-registry) repository.
+2. Add a new `.yaml` file in the `modules-metadata/` folder. The filename should match your module name (e.g., `jaspMyModule.yaml`). The file needs two fields:
    ```yaml
-   name: "YourModuleName"
-   gitUrl: "https://github.com/yourname/jaspYourModule"
+   name: "jaspMyModule"
+   gitUrl: "https://github.com/yourname/jaspMyModule"
    ```
-3. Create a pull request.
-4. After review and merge, your module appears in the beta-modules registry.
+3. Create a pull request to the `modules-registry` repository.
+4. After review and a successful merge, the JASP organization will fork your module repository and it will appear in the community modules list. Users running the JASP beta or nightly can then install it.
 
 ## Updating a Community Module
 
-When you have new features or bug fixes ready, open a **cross-fork pull request** from your repository to the JASP organization's fork:
+Once your module is in the registry, the JASP organization maintains a fork of your repository at `https://github.com/jasp-stats-modules/YourModuleName`. When you have new features or bug fixes ready, open a **cross-fork pull request** from your repository to this fork:
 
 1. **Find the fork**: `https://github.com/jasp-stats-modules/YourModuleName`
 2. **Create cross-fork PR**:
