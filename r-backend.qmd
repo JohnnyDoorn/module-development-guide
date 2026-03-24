@@ -43,10 +43,8 @@ Here's how the actual JASP t-test module uses `jaspResults` (simplified from the
 TTestIndependentSamples <- function(jaspResults, dataset, options) {
   ready <- length(options[["dependent"]]) > 0 && options[["group"]] != ""
 
-  if (ready) {
-    dataset <- .ttestReadData(dataset, options, "independent")
+  if (ready)
     .ttestCheckErrors(dataset, options, "independent")
-  }
 
   # Each function reaches into jaspResults for what it needs
   .ttestMainTable(      jaspResults, dataset, options, ready)
@@ -70,11 +68,9 @@ MyAnalysis <- function(jaspResults, dataset, options) {
   # 1. Check if we can compute results
   ready <- length(options[["variables"]]) > 0
 
-  # 2. Read data and check for errors
-  if (ready) {
-    dataset <- .myReadData(dataset, options)
+  # 2. Validate data
+  if (ready)
     .myCheckErrors(dataset, options)
-  }
 
   # 3. Create outputs (tables, plots)
   .myMainTable(jaspResults, dataset, options, ready)
@@ -94,6 +90,10 @@ MyAnalysis <- function(jaspResults, dataset, options) {
 Always access options with double brackets: `options[["myOption"]]`. Single brackets or `$` allow partial matching which can cause subtle bugs.
 :::
 
+::: {.callout-tip}
+For a complete copy-paste starting point, see the [Analysis Skeleton](appendix-skeleton.qmd) appendix.
+:::
+
 ## Step 2: Check if results can be computed
 
 Most analyses need minimum input before computing. Determine this early:
@@ -111,30 +111,30 @@ flowchart LR
   Decision -- "not yet" --> C["Show empty placeholders"]
 ```
 
-## Step 3: Read the dataset {#sec-preload-data}
+## Step 3: The dataset {#sec-preload-data}
 
-### preloadData — the preferred approach
+With `preloadData: true` (the default in `Description.qml`), JASP passes the dataset directly to your R function via the `dataset` argument — **you do not need a read-data function.** Columns are automatically converted to the types requested by QML components: if an `AssignedVariablesList` has `allowedColumns: ["scale"]`, those columns arrive in R as numeric.
 
-With `preloadData: true` (the default in `Description.qml`), JASP passes the dataset directly to your R function via the `dataset` argument. **This is the preferred way to handle data in JASP.** Columns are automatically converted to the types requested by QML components — if an `AssignedVariablesList` has `allowedColumns: ["scale"]`, those columns arrive in R as numeric.
-
-Because the data is already loaded, your "read data" helper typically just does any necessary subsetting or listwise deletion:
+If you need listwise deletion, do it inline in the main function or a small helper:
 
 ```r
-.myReadData <- function(dataset, options) {
-  # For listwise deletion (replaces the old exclude.na.listwise argument):
-  exclude <- unlist(options[["variables"]])
-  dataset <- jaspBase::excludeNaListwise(dataset, exclude)
-  return(dataset)
-}
+dataset <- jaspBase::excludeNaListwise(dataset, unlist(options[["variables"]]))
 ```
 
-::: {.callout-note}
-`preloadData: true` replaces the legacy `readDataSetToEnd()` / `.readDataSetToEnd()` functions. You no longer need to call these — the data arrives ready to use.
+If your analysis needs columns split into separate data frames (e.g., a layout variable vs. analysis variables), subset the preloaded `dataset`:
+
+```r
+mainData   <- dataset[, mainVariables]
+layoutData <- dataset[, layoutVariables]
+```
+
+::: {.callout-warning title="Legacy: readDataSetToEnd() is deprecated"}
+Older JASP analyses used a separate function — `readDataSetToEnd()` (or `.readDataSetToEnd()`) — to load data inside the R analysis. This function is **deprecated** and should **not** be used in new code. With `preloadData: true`, the data arrives in the `dataset` argument ready to use, with column types already set by QML. If you encounter `readDataSetToEnd()` in existing code, replace it by enabling `preloadData: true` in `Description.qml` and using the `dataset` argument directly.
 :::
 
 ### When to disable preloading
 
-For some analyses it's not yet possible to use preloaded data, because JASP cannot infer which column names appear in the options (e.g., **JAGS**, **SEM** where variable names are embedded in syntax strings). Disable preloading per-analysis in `Description.qml`:
+For some analyses JASP cannot infer which column names appear in the options (e.g., **JAGS**, **SEM** where variable names are embedded in syntax strings). Disable preloading per-analysis in `Description.qml`:
 
 ```qml
 Analysis
@@ -146,19 +146,6 @@ Analysis
 ```
 
 When `preloadData: false`, the `dataset` argument is `NULL` and you must read data manually.
-
-### Handling analyses that previously read data multiple times
-
-If your analysis previously called `readDataSetToEnd()` multiple times (e.g., reading a layout variable separately from the main dataset), the preloaded `dataset` now contains **all** requested columns in a single data frame. You need to split or subset it yourself:
-
-```r
-# Remove layout columns before passing to the analysis package
-dataset[layoutVariables] <- list(NULL)
-
-# Or split into two data frames
-mainData   <- dataset[, mainVariables]
-layoutData <- dataset[, layoutVariables]
-```
 
 ### Column encoding
 
@@ -369,13 +356,11 @@ The JASP Correlation analysis computes one set of correlation results and reuses
 CorrelationInternal <- function(jaspResults, dataset, options) {
   ready <- length(options[["variables"]]) >= 2
 
-  if (ready) {
-    dataset <- .corrReadData(dataset, options)
+  if (ready)
     .hasErrors(dataset, type = c("infinity", "variance", "observations"),
                observations.amount  = "< 3",
                observations.target  = options[["variables"]],
                exitAnalysisIfErrors = TRUE)
-  }
 
   # Compute once, reuse everywhere
   corrResults <- .corrMainResults(jaspResults, dataset, options, ready)

@@ -2,7 +2,7 @@
 title: "Analysis Skeleton (R Template)"
 ---
 
-This is the annotated reference skeleton for a JASP R analysis file. Use it as a starting point for new analyses.
+Copy-paste starting point for a new JASP analysis file. This follows the patterns described in @sec-r-backend. Assumes `preloadData: true` (the default) in `Description.qml`, so the `dataset` argument is already loaded.
 
 ```r
 #
@@ -14,156 +14,131 @@ This is the annotated reference skeleton for a JASP R analysis file. Use it as a
 # (at your option) any later version.
 #
 
-# Main function ----
-# This is the only public function. Its name must match the
-# function entry in Description.qml.
-MockAnalysis <- function(jaspResults, dataset, options) {
+# Main entry point ----
+# The function name must match the `func` field in Description.qml.
+# Receives: jaspResults (persistent output container),
+#           dataset     (preloaded data frame),
+#           options     (named list of user selections from QML).
+MyAnalysis <- function(jaspResults, dataset, options) {
 
-  # Set the analysis title (shown in the results panel)
-  jaspResults$title <- "Mock Analysis"
+  # 1. Can we compute?
+  ready <- length(options[["variables"]]) > 0
 
-  # Init options: derive any values needed across the analysis
-  options <- .mockInitOptions(jaspResults, options)
+  # 2. Validate
+  if (ready)
+    .myAnalysisCheckErrors(dataset, options)
 
-  # Read the dataset using built-in helpers
-  dataset <- .mockReadData(options)
-
-  # Validate data before computing
-  errors <- .mockErrorHandling(dataset, options)
-
-  # Compute results (cached via jaspState)
-  mockResults <- .mockComputeResults(jaspResults, dataset, options)
-
-  # Create output: containers, tables, plots
-  # These functions modify jaspResults in place and return nothing.
-  .mockContainerMain( jaspResults, options, mockResults)
-  .mockTableSomething(jaspResults, options, mockResults)
-  .mockTableSthElse(  jaspResults, options, mockResults)
-  .mockPlotSomething( jaspResults, options, mockResults)
+  # 3. Create output — each function writes to jaspResults in place
+  .myAnalysisMainTable(jaspResults, dataset, options, ready)
+  .myAnalysisPlot(     jaspResults, dataset, options, ready)
 
   return()
 }
 
-# Init functions ----
-.mockInitOptions <- function(jaspResults, options) {
-  # Derive any computed options or ready-checks here.
-  options
-}
-
-.mockReadData <- function(options) {
-  # Read data using JASP's built-in reader.
-  # columns: numeric variables; columns.as.factor: categorical variables.
-  if (options$groupvar == "") {
-    dataset <- .readDataSetToEnd(columns = variables)
-  } else {
-    dataset <- .readDataSetToEnd(
-      columns           = variables,
-      columns.as.factor = options$groupvar
-    )
-  }
-  dataset
-}
-
-.mockErrorHandling <- function(dataset, options) {
-  # Validate the dataset. exitAnalysisIfErrors = TRUE stops cleanly.
-  .hasErrors(dataset, "run",
-    type                = c("observations", "variance", "infinity"),
-    all.target          = options$variables,
-    observations.amount = "< 2",
+# Error checking ----
+.myAnalysisCheckErrors <- function(dataset, options) {
+  .hasErrors(dataset,
+    type                 = c("observations", "variance", "infinity"),
+    all.target           = options[["variables"]],
+    observations.amount  = "< 2",
     exitAnalysisIfErrors = TRUE
   )
 }
 
-# Results functions ----
-.mockComputeResults <- function(jaspResults, dataset, options) {
-  # Cache expensive computations with createJaspState.
-  if (is.null(jaspResults[["stateMockResults"]])) {
-    mockResults <- .mockResultsHelper(dataset)
+# Compute (cached) ----
+.myAnalysisComputeResults <- function(jaspResults, dataset, options) {
+  # Return cached results if available
+  if (!is.null(jaspResults[["myAnalysisState"]]))
+    return(jaspResults[["myAnalysisState"]]$object)
 
-    jaspResults[["stateMockResults"]] <- createJaspState(mockResults)
-    jaspResults[["stateMockResults"]]$dependOn("variables")
-  } else {
-    mockResults <- jaspResults[["stateMockResults"]]$object
+  # --- expensive computation goes here ---
+  results <- list(
+    model = lm(as.formula(paste(options[["dependent"]], "~ .")),
+               data = dataset)
+  )
+
+  # Cache — invalidated automatically when dependencies change
+  state <- createJaspState(results)
+  state$dependOn(c("dependent", "variables"))
+  jaspResults[["myAnalysisState"]] <- state
+
+  return(results)
+}
+
+# Table ----
+.myAnalysisMainTable <- function(jaspResults, dataset, options, ready) {
+  # 1. Skip if already cached
+  if (!is.null(jaspResults[["mainTable"]])) return()
+
+  # 2. Create & configure
+  table <- createJaspTable(title = gettext("Results"))
+  table$dependOn(c("variables", "dependent"))
+
+  # 3. Define columns
+  table$addColumnInfo(name = "term",     title = gettext("Term"),     type = "string")
+  table$addColumnInfo(name = "estimate", title = gettext("Estimate"), type = "number")
+  table$addColumnInfo(name = "se",       title = gettext("Std. Error"), type = "number")
+  table$addColumnInfo(name = "p",        title = "p",                 type = "pvalue")
+
+  # 4. Attach — displays an empty placeholder immediately
+  jaspResults[["mainTable"]] <- table
+
+  # 5. Not ready yet? Show the placeholder (dots)
+  if (!ready) return()
+
+  # 6. Compute (or retrieve from cache) and fill
+  results  <- .myAnalysisComputeResults(jaspResults, dataset, options)
+  coefTab  <- summary(results$model)$coefficients
+
+  for (i in seq_len(nrow(coefTab))) {
+    table$addRows(list(
+      term     = rownames(coefTab)[i],
+      estimate = coefTab[i, "Estimate"],
+      se       = coefTab[i, "Std. Error"],
+      p        = coefTab[i, "Pr(>|t|)"]
+    ))
   }
-  mockResults
 }
 
-.mockResultsHelper <- function(dataset) {
-  # Perform the actual statistical computations here.
-}
+# Plot ----
+.myAnalysisPlot <- function(jaspResults, dataset, options, ready) {
+  # Only create when the user enables the checkbox
+  if (!options[["residualPlot"]]) return()
+  if (!is.null(jaspResults[["residualPlot"]])) return()
 
-# Output functions ----
-.mockContainerMain <- function(jaspResults, options, mockResults) {
-  # Early return if container already exists (caching).
-  if (!is.null(jaspResults[["mockMainContainer"]])) return()
+  plot <- createJaspPlot(title = gettext("Residuals vs. Fitted"),
+                         width = 480, height = 320)
+  plot$dependOn(c("variables", "dependent", "residualPlot"))
+  jaspResults[["residualPlot"]] <- plot
 
-  mainContainer <- createJaspContainer("Model fit tables")
-  mainContainer$dependOn(c("variables", "someotheroption"))
+  if (!ready) return()
 
-  jaspResults[["mockMainContainer"]] <- mainContainer
-}
+  results <- .myAnalysisComputeResults(jaspResults, dataset, options)
 
-.mockTableSomething <- function(jaspResults, options, mockResults) {
-  if (!is.null(jaspResults[["mockMainContainer"]][["mockTable"]])) return()
+  plotData <- data.frame(
+    fitted    = fitted(results$model),
+    residuals = residuals(results$model)
+  )
 
-  # Create a table and set dependencies
-  mockTable <- createJaspTable(title = gettext("Mock Table"))
-  mockTable$dependOn(c("variables", "someotheroption"))
-
-  # Attach to container
-  jaspResults[["mockMainContainer"]][["mockTable"]] <- mockTable
-
-  # Define columns: name (key), title (display), type, format
-  mockTable$addColumnInfo(name = "chisq",  title = "\u03a7\u00b2",           type = "number", format = "sf:4")
-  mockTable$addColumnInfo(name = "pvalue", title = "p",                      type = "number", format = "dp:3;p:.001")
-  mockTable$addColumnInfo(name = "BF",     title = gettext("Bayes Factor"),  type = "number", format = "sf:4")
-  mockTable$addColumnInfo(name = "sth",    title = gettext("Some Title"),    type = "string")
-
-  # Fill columns with data
-  mockTable[["chisq"]]  <- mockResults$column1
-  mockTable[["pvalue"]] <- mockResults$column2
-  mockTable[["BF"]]     <- mockResults$column3
-  mockTable[["sth"]]    <- mockResults$sometext
-}
-
-.mockTableSthElse <- function(jaspResults, options, mockResults) {
-  if (!is.null(jaspResults[["mockMainContainer"]][["mockTable2"]])) return()
-
-  mockTable2 <- createJaspTable(title = gettext("Mock Table Something Else"))
-  mockTable2$dependOn(c("variables", "someotheroption"))
-
-  jaspResults[["mockMainContainer"]][["mockTable2"]] <- mockTable2
-
-  mockTable2$addColumnInfo(name = "hallo", title = "Hallo", type = "string")
-  mockTable2$addColumnInfo(name = "doei",  title = "Doei",  type = "string")
-
-  mockSummary <- summary(mockResults$someObject)
-
-  mockTable2[["hallo"]] <- ifelse(mockSummary$hallo > 1, "Hallo!", "Hello!")
-  mockTable2[["doei"]]  <- mockSummary$doei^2
-}
-
-.mockPlotSomething <- function(jaspResults, options, mockResults) {
-  if (!is.null(jaspResults[["mockPlot"]])) return()
-
-  mockPlot <- createJaspPlot(title = gettext("Mock Plot"), height = 320, width = 480)
-  mockPlot$dependOn(c("variables", "someotheroption"))
-
-  jaspResults[["mockPlot"]] <- mockPlot
-
-  # Assign a ggplot2 object (preferred) or base R plot
-  mockPlot$plotObject <- plot(mockResults$someObject)
+  plot$plotObject <- ggplot2::ggplot(plotData,
+      ggplot2::aes(x = .data[["fitted"]], y = .data[["residuals"]])) +
+    ggplot2::geom_point() +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+    ggplot2::labs(x = gettext("Fitted values"), y = gettext("Residuals"))
 }
 ```
 
-### Key Patterns
+### Key patterns
 
 | Pattern | Why |
 |---------|-----|
-| Public function (`MockAnalysis`) has no `.` prefix | It is called from QML via Description.qml |
-| Private helpers start with `.` | Hides them from the module NAMESPACE |
+| Public function (`MyAnalysis`) has **no** `.` prefix | Called from QML via `Description.qml` |
+| Private helpers start with `.myAnalysis` | Hidden from `NAMESPACE`; prefix avoids name collisions across modules |
+| `ready` flag checked first | Lets output functions show empty placeholders before input is complete |
+| `dataset` provided by JASP | `preloadData: true` in `Description.qml` — data arrives ready to use, no read function needed |
+| `.myAnalysisComputeResults()` returns from cache or computes | Both the table and the plot call it; work is done only once |
 | `if (!is.null(...)) return()` at start of output functions | Avoids recreating cached output |
-| `$dependOn(...)` on every element | Tells JASP when to recompute |
-| `createJaspState()` for expensive results | Caches computation across reactive reruns |
-| `gettext()` on all display strings | Enables translation |
-| Unicode `\uXXXX` for special characters | Portable across locales |
+| Table attached **before** filling it | User sees a placeholder immediately; data fills in after computation |
+| `$dependOn(...)` on every element | Tells JASP when to invalidate and recompute |
+| `gettext()` on all user-visible strings | Enables translation (see @sec-i18n) |
+| `options[["x"]]` (double brackets) | Avoids partial-matching bugs from `$` or `[` |

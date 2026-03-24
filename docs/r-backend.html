@@ -345,12 +345,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#sec-main-function" id="toc-sec-main-function" class="nav-link" data-scroll-target="#sec-main-function"><span class="header-section-number">5.2</span> The analysis function pattern</a></li>
   <li><a href="#step-2-check-if-results-can-be-computed" id="toc-step-2-check-if-results-can-be-computed" class="nav-link" data-scroll-target="#step-2-check-if-results-can-be-computed"><span class="header-section-number">5.3</span> Step 2: Check if results can be computed</a></li>
-  <li><a href="#sec-preload-data" id="toc-sec-preload-data" class="nav-link" data-scroll-target="#sec-preload-data"><span class="header-section-number">5.4</span> Step 3: Read the dataset</a>
+  <li><a href="#sec-preload-data" id="toc-sec-preload-data" class="nav-link" data-scroll-target="#sec-preload-data"><span class="header-section-number">5.4</span> Step 3: The dataset</a>
   <ul class="collapse">
-  <li><a href="#preloaddata-the-preferred-approach" id="toc-preloaddata-the-preferred-approach" class="nav-link" data-scroll-target="#preloaddata-the-preferred-approach"><span class="header-section-number">5.4.1</span> preloadData — the preferred approach</a></li>
-  <li><a href="#when-to-disable-preloading" id="toc-when-to-disable-preloading" class="nav-link" data-scroll-target="#when-to-disable-preloading"><span class="header-section-number">5.4.2</span> When to disable preloading</a></li>
-  <li><a href="#handling-analyses-that-previously-read-data-multiple-times" id="toc-handling-analyses-that-previously-read-data-multiple-times" class="nav-link" data-scroll-target="#handling-analyses-that-previously-read-data-multiple-times"><span class="header-section-number">5.4.3</span> Handling analyses that previously read data multiple times</a></li>
-  <li><a href="#column-encoding" id="toc-column-encoding" class="nav-link" data-scroll-target="#column-encoding"><span class="header-section-number">5.4.4</span> Column encoding</a></li>
+  <li><a href="#when-to-disable-preloading" id="toc-when-to-disable-preloading" class="nav-link" data-scroll-target="#when-to-disable-preloading"><span class="header-section-number">5.4.1</span> When to disable preloading</a></li>
+  <li><a href="#column-encoding" id="toc-column-encoding" class="nav-link" data-scroll-target="#column-encoding"><span class="header-section-number">5.4.2</span> Column encoding</a></li>
   </ul></li>
   <li><a href="#sec-error-checking" id="toc-sec-error-checking" class="nav-link" data-scroll-target="#sec-error-checking"><span class="header-section-number">5.5</span> Step 4: Check for errors</a>
   <ul class="collapse">
@@ -438,20 +436,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>TTestIndependentSamples <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options) {</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  ready <span class="ot">&lt;-</span> <span class="fu">length</span>(options[[<span class="st">"dependent"</span>]]) <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> options[[<span class="st">"group"</span>]] <span class="sc">!=</span> <span class="st">""</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready) {</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    dataset <span class="ot">&lt;-</span> <span class="fu">.ttestReadData</span>(dataset, options, <span class="st">"independent"</span>)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.ttestCheckErrors</span>(dataset, options, <span class="st">"independent"</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Each function reaches into jaspResults for what it needs</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestMainTable</span>(      jaspResults, dataset, options, ready)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestNormalTable</span>(    jaspResults, dataset, options, ready)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestQQPlot</span>(         jaspResults, dataset, options, ready)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestDescriptives</span>(   jaspResults, dataset, options, ready)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestDescriptivePlot</span>(jaspResults, dataset, options, ready)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.ttestCheckErrors</span>(dataset, options, <span class="st">"independent"</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Each function reaches into jaspResults for what it needs</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestMainTable</span>(      jaspResults, dataset, options, ready)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestNormalTable</span>(    jaspResults, dataset, options, ready)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestQQPlot</span>(         jaspResults, dataset, options, ready)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestDescriptives</span>(   jaspResults, dataset, options, ready)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestDescriptivePlot</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Notice: <strong>no return values are passed between functions</strong>. Every function writes to and reads from <code>jaspResults</code>. If the user only toggles the “Descriptives” checkbox, only <code>.ttestDescriptives()</code> and <code>.ttestDescriptivePlot()</code> re-run — the main table is still cached.</p>
 </section>
 </section>
@@ -462,18 +458,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 1. Check if we can compute results</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  ready <span class="ot">&lt;-</span> <span class="fu">length</span>(options[[<span class="st">"variables"</span>]]) <span class="sc">&gt;</span> <span class="dv">0</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 2. Read data and check for errors</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready) {</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    dataset <span class="ot">&lt;-</span> <span class="fu">.myReadData</span>(dataset, options)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.myCheckErrors</span>(dataset, options)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 3. Create outputs (tables, plots)</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.myMainTable</span>(jaspResults, dataset, options, ready)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.myMainPlot</span>(jaspResults, dataset, options, ready)</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 2. Validate data</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.myCheckErrors</span>(dataset, options)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 3. Create outputs (tables, plots)</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.myMainTable</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.myMainPlot</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <table class="table">
 <colgroup>
 <col style="width: 43%">
@@ -513,6 +507,19 @@ Important
 <p>Always access options with double brackets: <code>options[["myOption"]]</code>. Single brackets or <code>$</code> allow partial matching which can cause subtle bugs.</p>
 </div>
 </div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For a complete copy-paste starting point, see the <a href="./appendix-skeleton.html">Analysis Skeleton</a> appendix.</p>
+</div>
+</div>
 </section>
 <section id="step-2-check-if-results-can-be-computed" class="level2" data-number="5.3">
 <h2 data-number="5.3" class="anchored" data-anchor-id="step-2-check-if-results-can-be-computed"><span class="header-section-number">5.3</span> Step 2: Check if results can be computed</h2>
@@ -534,54 +541,39 @@ Important
 </div>
 </section>
 <section id="sec-preload-data" class="level2" data-number="5.4">
-<h2 data-number="5.4" class="anchored" data-anchor-id="sec-preload-data"><span class="header-section-number">5.4</span> Step 3: Read the dataset</h2>
-<section id="preloaddata-the-preferred-approach" class="level3" data-number="5.4.1">
-<h3 data-number="5.4.1" class="anchored" data-anchor-id="preloaddata-the-preferred-approach"><span class="header-section-number">5.4.1</span> preloadData — the preferred approach</h3>
-<p>With <code>preloadData: true</code> (the default in <code>Description.qml</code>), JASP passes the dataset directly to your R function via the <code>dataset</code> argument. <strong>This is the preferred way to handle data in JASP.</strong> Columns are automatically converted to the types requested by QML components — if an <code>AssignedVariablesList</code> has <code>allowedColumns: ["scale"]</code>, those columns arrive in R as numeric.</p>
-<p>Because the data is already loaded, your “read data” helper typically just does any necessary subsetting or listwise deletion:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>.myReadData <span class="ot">&lt;-</span> <span class="cf">function</span>(dataset, options) {</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># For listwise deletion (replaces the old exclude.na.listwise argument):</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  exclude <span class="ot">&lt;-</span> <span class="fu">unlist</span>(options[[<span class="st">"variables"</span>]])</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  dataset <span class="ot">&lt;-</span> jaspBase<span class="sc">::</span><span class="fu">excludeNaListwise</span>(dataset, exclude)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dataset)</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="callout callout-style-default callout-note callout-titled">
+<h2 data-number="5.4" class="anchored" data-anchor-id="sec-preload-data"><span class="header-section-number">5.4</span> Step 3: The dataset</h2>
+<p>With <code>preloadData: true</code> (the default in <code>Description.qml</code>), JASP passes the dataset directly to your R function via the <code>dataset</code> argument — <strong>you do not need a read-data function.</strong> Columns are automatically converted to the types requested by QML components: if an <code>AssignedVariablesList</code> has <code>allowedColumns: ["scale"]</code>, those columns arrive in R as numeric.</p>
+<p>If you need listwise deletion, do it inline in the main function or a small helper:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> jaspBase<span class="sc">::</span><span class="fu">excludeNaListwise</span>(dataset, <span class="fu">unlist</span>(options[[<span class="st">"variables"</span>]]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If your analysis needs columns split into separate data frames (e.g., a layout variable vs.&nbsp;analysis variables), subset the preloaded <code>dataset</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>mainData   <span class="ot">&lt;-</span> dataset[, mainVariables]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>layoutData <span class="ot">&lt;-</span> dataset[, layoutVariables]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-warning callout-titled" title="Legacy: readDataSetToEnd() is deprecated">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note
+Legacy: readDataSetToEnd() is deprecated
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><code>preloadData: true</code> replaces the legacy <code>readDataSetToEnd()</code> / <code>.readDataSetToEnd()</code> functions. You no longer need to call these — the data arrives ready to use.</p>
+<p>Older JASP analyses used a separate function — <code>readDataSetToEnd()</code> (or <code>.readDataSetToEnd()</code>) — to load data inside the R analysis. This function is <strong>deprecated</strong> and should <strong>not</strong> be used in new code. With <code>preloadData: true</code>, the data arrives in the <code>dataset</code> argument ready to use, with column types already set by QML. If you encounter <code>readDataSetToEnd()</code> in existing code, replace it by enabling <code>preloadData: true</code> in <code>Description.qml</code> and using the <code>dataset</code> argument directly.</p>
 </div>
 </div>
-</section>
-<section id="when-to-disable-preloading" class="level3" data-number="5.4.2">
-<h3 data-number="5.4.2" class="anchored" data-anchor-id="when-to-disable-preloading"><span class="header-section-number">5.4.2</span> When to disable preloading</h3>
-<p>For some analyses it’s not yet possible to use preloaded data, because JASP cannot infer which column names appear in the options (e.g., <strong>JAGS</strong>, <strong>SEM</strong> where variable names are embedded in syntax strings). Disable preloading per-analysis in <code>Description.qml</code>:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Analysis</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">title</span><span class="op">:</span>         <span class="fu">qsTr</span>(<span class="st">"Structural Equation Modeling"</span>)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">func</span><span class="op">:</span>          <span class="st">"SEM"</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">preloadData</span><span class="op">:</span>   <span class="kw">false</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="when-to-disable-preloading" class="level3" data-number="5.4.1">
+<h3 data-number="5.4.1" class="anchored" data-anchor-id="when-to-disable-preloading"><span class="header-section-number">5.4.1</span> When to disable preloading</h3>
+<p>For some analyses JASP cannot infer which column names appear in the options (e.g., <strong>JAGS</strong>, <strong>SEM</strong> where variable names are embedded in syntax strings). Disable preloading per-analysis in <code>Description.qml</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Analysis</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">title</span><span class="op">:</span>         <span class="fu">qsTr</span>(<span class="st">"Structural Equation Modeling"</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">func</span><span class="op">:</span>          <span class="st">"SEM"</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">preloadData</span><span class="op">:</span>   <span class="kw">false</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>When <code>preloadData: false</code>, the <code>dataset</code> argument is <code>NULL</code> and you must read data manually.</p>
 </section>
-<section id="handling-analyses-that-previously-read-data-multiple-times" class="level3" data-number="5.4.3">
-<h3 data-number="5.4.3" class="anchored" data-anchor-id="handling-analyses-that-previously-read-data-multiple-times"><span class="header-section-number">5.4.3</span> Handling analyses that previously read data multiple times</h3>
-<p>If your analysis previously called <code>readDataSetToEnd()</code> multiple times (e.g., reading a layout variable separately from the main dataset), the preloaded <code>dataset</code> now contains <strong>all</strong> requested columns in a single data frame. You need to split or subset it yourself:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove layout columns before passing to the analysis package</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>dataset[layoutVariables] <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="cn">NULL</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or split into two data frames</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>mainData   <span class="ot">&lt;-</span> dataset[, mainVariables]</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>layoutData <span class="ot">&lt;-</span> dataset[, layoutVariables]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="column-encoding" class="level3" data-number="5.4.4">
-<h3 data-number="5.4.4" class="anchored" data-anchor-id="column-encoding"><span class="header-section-number">5.4.4</span> Column encoding</h3>
+<section id="column-encoding" class="level3" data-number="5.4.2">
+<h3 data-number="5.4.2" class="anchored" data-anchor-id="column-encoding"><span class="header-section-number">5.4.2</span> Column encoding</h3>
 <p>Column names are <strong>encoded</strong> (e.g., <code>JaspColumn_.1._Encoded</code>) to handle special characters. The values in <code>options</code> are also encoded, so you can subset directly:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>dataset[, options[[<span class="st">"variables"</span>]]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>When displaying column names to users (e.g., as axis tick labels in plots), decode them:</p>
@@ -833,37 +825,35 @@ Tip
 <div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>CorrelationInternal <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options) {</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  ready <span class="ot">&lt;-</span> <span class="fu">length</span>(options[[<span class="st">"variables"</span>]]) <span class="sc">&gt;=</span> <span class="dv">2</span></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready) {</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    dataset <span class="ot">&lt;-</span> <span class="fu">.corrReadData</span>(dataset, options)</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.hasErrors</span>(dataset, <span class="at">type =</span> <span class="fu">c</span>(<span class="st">"infinity"</span>, <span class="st">"variance"</span>, <span class="st">"observations"</span>),</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">observations.amount  =</span> <span class="st">"&lt; 3"</span>,</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>               <span class="at">observations.target  =</span> options[[<span class="st">"variables"</span>]],</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>               <span class="at">exitAnalysisIfErrors =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute once, reuse everywhere</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  corrResults <span class="ot">&lt;-</span> <span class="fu">.corrMainResults</span>(jaspResults, dataset, options, ready)</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrAssumptions</span>(jaspResults, dataset, options, ready, corrResults)</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrPlot</span>(       jaspResults, dataset, options, ready, corrResults)</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrHeatmap</span>(    jaspResults, options,          ready, corrResults)</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>.corrMainResults <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options, ready) {</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return cached results if both the table and state still exist</span></span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"mainTable"</span>]]) <span class="sc">&amp;&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"results"</span>]]))</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(jaspResults[[<span class="st">"results"</span>]]<span class="sc">$</span>object)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.hasErrors</span>(dataset, <span class="at">type =</span> <span class="fu">c</span>(<span class="st">"infinity"</span>, <span class="st">"variance"</span>, <span class="st">"observations"</span>),</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>               <span class="at">observations.amount  =</span> <span class="st">"&lt; 3"</span>,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">observations.target  =</span> options[[<span class="st">"variables"</span>]],</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>               <span class="at">exitAnalysisIfErrors =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute once, reuse everywhere</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  corrResults <span class="ot">&lt;-</span> <span class="fu">.corrMainResults</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrAssumptions</span>(jaspResults, dataset, options, ready, corrResults)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrPlot</span>(       jaspResults, dataset, options, ready, corrResults)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrHeatmap</span>(    jaspResults, options,          ready, corrResults)</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>.corrMainResults <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options, ready) {</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return cached results if both the table and state still exist</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"mainTable"</span>]]) <span class="sc">&amp;&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"results"</span>]]))</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(jaspResults[[<span class="st">"results"</span>]]<span class="sc">$</span>object)</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>  mainTable <span class="ot">&lt;-</span> <span class="fu">.corrInitMainTable</span>(jaspResults, options)</span>
 <span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>  mainTable <span class="ot">&lt;-</span> <span class="fu">.corrInitMainTable</span>(jaspResults, options)</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>  corrResults <span class="ot">&lt;-</span> <span class="fu">.corrComputeResults</span>(jaspResults, dataset, options, ready)</span>
 <span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>  corrResults <span class="ot">&lt;-</span> <span class="fu">.corrComputeResults</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrFillTableMain</span>(mainTable, corrResults, options, ready)</span>
 <span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrFillTableMain</span>(mainTable, corrResults, options, ready)</span>
-<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(corrResults)</span>
-<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(corrResults)</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The pattern: <code>.corrMainResults()</code> either returns the cached state or computes fresh results. Either way, it returns the same object, and every downstream function uses it without caring whether it was cached or freshly computed.</p>
 </section>
 <section id="what-can-you-store-in-state" class="level3" data-number="5.8.2">

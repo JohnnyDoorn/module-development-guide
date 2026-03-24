@@ -103,25 +103,17 @@ plot$dependOn(optionContainsValue = list(variables = "age"))
 
 By default (`preloadData: true` in `Description.qml`), JASP preloads the dataset and passes it to your R function via the `dataset` argument. **This is the preferred way to handle data.** Columns are automatically converted to the types requested by QML components — if an `AssignedVariablesList` has `allowedColumns: ["scale"]`, those columns arrive in R as numeric.
 
-This replaces the legacy `readDataSetToEnd()` approach. Where you previously did listwise deletion during read:
+The old function `readDataSetToEnd()` is **deprecated** — do not use it in new code. With preloaded data the `dataset` argument already contains all requested columns with the correct types. If you need listwise deletion:
 
 ```r
-# Old approach (no longer recommended):
-dataset <- readDataSetToEnd(columns = ..., exclude.na.listwise = exclude)
-```
-
-You now use:
-
-```r
-# New approach with preloadData:
 dataset <- jaspBase::excludeNaListwise(dataset, exclude)
 ```
 
-To disable preloading for analyses where JASP cannot infer column names from the options (e.g., SEM, JAGS): set `preloadData: false` in `Description.qml` for that specific analysis. Then read data manually in R. See @sec-preload-data for full details.
+To disable preloading for analyses where JASP cannot infer column names from the options (e.g., SEM, JAGS): set `preloadData: false` in `Description.qml` for that specific analysis. See @sec-preload-data for full details.
 
 ### Unit tests with preloaded data
 
-Since `readDataSetToEnd()` no longer converts column types, you may need to specify types explicitly in unit tests. There are three ways:
+Because column types are now set by QML rather than by an R read function, you may need to specify types explicitly in unit tests. There are three ways:
 
 1. **Add type information to options**: if `options$variables` contains the variables, add `options$variables.types` to specify the types
 2. **Use `jaspTools::addTypedDataSet()`**: pass a named list like `list(var1 = "scale", var2 = "nominal")` — useful when reusing one dataset across many tests

@@ -164,4 +164,4 @@ The last line prints the library path for your installed module. This is the pat
 | `browser()` doesn't trigger | Running a cached code path (`if (!is.null(...)) return()`) | Clear jaspResults state or change a dependency option |
 | Options don't match QML | Typo in option name | Compare `names(analysisOptions("X"))` against your QML `name:` values |
 | `Error: package 'X' not found` | renv library not restored | Run `renv::restore()` first |
-| Results differ from JASP | Dataset encoding differences | Use the same dataset file; check `.readDataSetToEnd()` column types |
+| Results differ from JASP | Dataset encoding differences | Use the same dataset file; check column types in options (see @sec-preload-data) |
