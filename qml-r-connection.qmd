@@ -90,14 +90,17 @@ The `$dependOn()` calls in R reference option names from QML. When a listed opti
 table$dependOn(c("variables", "ciLevel", "alternative"))
 ```
 
-This means: rebuild this table whenever `variables`, `ciLevel`, or `alternative` changes in the QML form.
+This means: rebuild this table whenever `variables`, `ciLevel`, or `alternative` changes in the QML form. If any of these options change, JASP sets the table to `NULL` — so the next time your code runs, the `if (!is.null(...)) return()` check fails and the table is recreated.
 
-Dependencies can also be set on containers (inherited by all children) and with `optionContainsValue` for per-value granularity:
+Dependencies can also be set on a **container**. When a container's dependency changes, the entire container and everything inside it (tables, plots, state) is discarded:
 
 ```r
-# Only invalidate this plot if "age" is removed from the variables list
-plot$dependOn(optionContainsValue = list(variables = "age"))
+container <- createJaspContainer(title = gettext("Results"))
+container$dependOn(c("dependent", "variables"))
+jaspResults[["resultsContainer"]] <- container
 ```
+
+This is different from setting `$dependOn()` on a single table inside a container — in that case only that table is removed, while the container and its other contents survive. Setting the dependency on the container itself means *all* contents are thrown out at once, which is what you want when the outputs share a common computation that must be redone.
 
 ## The dataset {#sec-dataset-preload}
 

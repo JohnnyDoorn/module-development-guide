@@ -4,15 +4,15 @@ QML (Qt Modeling Language) defines the analysis options panel that users interac
 
 Key QML paradigms:
 
-- **Containment** — components can be nested; properties of inner components are hidden from outer ones
-- **Property binding** — when a property is set via a JavaScript expression referencing another component, it updates automatically when that component changes
+-   **Containment** — components can be nested; properties of inner components are hidden from outer ones
+-   **Property binding** — when a property is set via a JavaScript expression referencing another component, it updates automatically when that component changes
 
-```qml
+``` qml
 CheckBox { id: showCi; label: qsTr("Confidence interval") }
 CIField  { name: "ciLevel"; enabled: showCi.checked }
 ```
 
-::: {.callout-important}
+::: callout-important
 Wrap **all** user-visible text in `qsTr()` for translation support. Use `\uXXXX` for non-Latin characters.
 :::
 
@@ -24,15 +24,15 @@ Follow the [QML style guide](appendix-qml-style.qmd) for formatting conventions.
 
 Toggle on/off. Nested components are automatically enabled/disabled.
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `name` | — | Identifier used in R |
-| `label` | — | User-visible text |
-| `checked` | `false` | Default state |
-| `childrenOnSameRow` | `false` | Place children horizontally |
-| `columns` | `1` | Columns for nested components |
+| Property            | Default | Description                   |
+|---------------------|---------|-------------------------------|
+| `name`              | —       | Identifier used in R          |
+| `label`             | —       | User-visible text             |
+| `checked`           | `false` | Default state                 |
+| `childrenOnSameRow` | `false` | Place children horizontally   |
+| `columns`           | `1`     | Columns for nested components |
 
-```qml
+``` qml
 CheckBox
 {
     name:    "homogeneityCorrections"
@@ -50,7 +50,7 @@ CheckBox
 
 Only one RadioButton per group can be selected. The group's `name` is sent to R with the `value` of the selected button.
 
-```qml
+``` qml
 RadioButtonGroup
 {
     name:  "alternative"
@@ -65,7 +65,7 @@ RadioButtonGroup
 
 ### DropDown
 
-```qml
+``` qml
 DropDown
 {
     name:   "method"
@@ -83,14 +83,14 @@ Key properties: `source` (populate from a variable list), `addEmptyValue`, `star
 
 ### Numeric fields
 
-| Component | Purpose | Key defaults |
-|-----------|---------|--------------|
-| `DoubleField` | Decimal input | `min: 0`, `decimals: 3` |
-| `IntegerField` | Integer input | `min: 0` |
-| `PercentField` | Percentage | `defaultValue: 50` |
-| `CIField` | Confidence interval % | `defaultValue: 95` |
+| Component      | Purpose               | Key defaults            |
+|----------------|-----------------------|-------------------------|
+| `DoubleField`  | Decimal input         | `min: 0`, `decimals: 3` |
+| `IntegerField` | Integer input         | `min: 0`                |
+| `PercentField` | Percentage            | `defaultValue: 50`      |
+| `CIField`      | Confidence interval % | `defaultValue: 95`      |
 
-```qml
+``` qml
 DoubleField  { name: "priorWidth"; label: qsTr("Prior width"); defaultValue: 0.5; max: 2 }
 IntegerField { name: "nSamples";   label: qsTr("Samples");     defaultValue: 10000 }
 CIField      { name: "ciLevel";    label: qsTr("Confidence interval") }
@@ -100,7 +100,7 @@ CIField      { name: "ciLevel";    label: qsTr("Confidence interval") }
 
 `TextField` accepts arbitrary text. `FormulaField` accepts R expressions that evaluate to numbers (e.g., `1/3`, `pi`, `sin(30)`).
 
-```qml
+``` qml
 TextField    { name: "labelY"; label: qsTr("Y-axis label"); fieldWidth: 200 }
 FormulaField { name: "prior";  label: qsTr("Prior");        defaultValue: "1/3" }
 ```
@@ -109,9 +109,9 @@ FormulaField { name: "prior";  label: qsTr("Prior");        defaultValue: "1/3" 
 
 Multi-line input; press Ctrl+Enter to apply. Set `textType` for syntax highlighting:
 
-- `JASP.TextTypeLavaan` — lavaan syntax
-- `JASP.TextTypeRcode` — R code
-- `JASP.TextTypeJAGS` — JAGS model
+-   `JASP.TextTypeLavaan` — lavaan syntax
+-   `JASP.TextTypeRcode` — R code
+-   `JASP.TextTypeJAGS` — JAGS model
 
 ## Variable specification components
 
@@ -119,7 +119,7 @@ Multi-line input; press Ctrl+Enter to apply. Set `textType` for syntax highlight
 
 The core drag-and-drop mechanism. Wrap in a `VariablesForm`:
 
-```qml
+``` qml
 VariablesForm
 {
     AvailableVariablesList { name: "allVariables" }
@@ -144,13 +144,13 @@ VariablesForm
 Key `AssignedVariablesList` properties:
 
 | Property | Description |
-|----------|-------------|
+|-------------------------------|----------------------------------------|
 | `singleVariable` | Only one variable allowed |
 | `allowedColumns` | Restrict to `["scale"]`, `["nominal", "ordinal"]`, etc. |
 | `listViewType` | `JASP.Interaction` for model terms, `JASP.Layers` for layers |
 | `rowComponent` | Add per-variable controls (checkboxes, dropdowns) |
 
-```qml
+``` qml
 AssignedVariablesList
 {
     name:         "modelTerms"
@@ -166,7 +166,7 @@ AssignedVariablesList
 
 For defining factor names and their levels (e.g., Repeated Measures ANOVA):
 
-```qml
+``` qml
 FactorLevelList
 {
     name:       "repeatedMeasuresFactors"
@@ -184,7 +184,7 @@ FactorLevelList
 
 Dynamically add/remove sets of options (e.g., multiple models):
 
-```qml
+``` qml
 ComponentsList
 {
     name:       "models"
@@ -201,7 +201,7 @@ ComponentsList
 
 Multiple tabs, each containing the same set of controls:
 
-```qml
+``` qml
 TabView
 {
     name:        "models"
@@ -213,8 +213,7 @@ TabView
 
 ### InputListView / TableView
 
-`InputListView` — list of user-specified items with per-item controls.
-`TableView` — spreadsheet-like grid input.
+`InputListView` — list of user-specified items with per-item controls. `TableView` — spreadsheet-like grid input.
 
 ![InputListView](img/qml-guide/InputListView_Example.png)
 
@@ -226,7 +225,7 @@ TabView
 
 Visually groups controls with an optional title:
 
-```qml
+``` qml
 Group
 {
     title: qsTr("Additional Options")
@@ -241,7 +240,7 @@ Group
 
 A collapsible section (accordion):
 
-```qml
+``` qml
 Section
 {
     title: qsTr("Assumption Checks")
@@ -256,7 +255,7 @@ Section
 
 Use `Layout.columnSpan` and `Layout.rowSpan` to control how components fill the grid:
 
-```qml
+``` qml
 VariablesForm
 {
     AvailableVariablesList { name: "allVars" }
@@ -268,7 +267,7 @@ VariablesForm
 
 Every component accepts an `info` property used to auto-generate help documentation:
 
-```qml
+``` qml
 CheckBox
 {
     name:  "descriptives"
@@ -281,7 +280,7 @@ Wrap `info` text in `qsTr()` to make help translatable.
 
 ## Complete example
 
-```qml
+``` qml
 import QtQuick
 import JASP
 import JASP.Controls
@@ -289,32 +288,33 @@ import JASP.Controls
 Form
 {
     VariablesForm
-    {
-        AvailableVariablesList { name: "allVariablesList" }
-        AssignedVariablesList  { name: "variables"; label: qsTr("Variables"); allowedColumns: ["scale"] }
-        AssignedVariablesList  { name: "groupingVariable"; label: qsTr("Grouping Variable"); singleVariable: true; allowedColumns: ["nominal"] }
-    }
+ {
+		infoLabel: qsTr("Input")
+		AvailableVariablesList	{ name: "allVariablesList"								}
+		AssignedVariablesList	{ name: "variables"; id: variables;		title: qsTr("Variables");	info: qsTr("All variables of interest."); allowTypeChange: true}
+		AssignedVariablesList	{ name: "splitBy";			title: qsTr("Split");		info: qsTr("Can be split by a categorical variable such as experimental condition.") ; singleVariable: true; allowedColumns: ["nominal"];	id: splitBy; minLevels: 2; maxLevels: 256 } // without maxLevels entering a continuous variable can freeze/ crash jasp, so we need an arbitrary maximum
+	}
 
-    Section
-    {
-        title: qsTr("Additional Statistics")
-        Group
-        {
-            title: qsTr("Location")
-            CheckBox { name: "meanDifference";           label: qsTr("Mean difference") }
-            CheckBox { name: "meanDiffConfidenceInterval"; label: qsTr("Confidence interval"); childrenOnSameRow: true
-                CIField  { name: "meanDiffCiLevel" }
-            }
-            CheckBox { name: "effectSize"; label: qsTr("Effect size") }
-        }
-    }
+	CheckBox
+	{
+		name	: "descriptivesTableTransposed"
+		label	: qsTr("Transpose descriptives table")
+		info	: qsTr("Tranposes the main table")
+		checked	: false
+	}
 
-    Section
-    {
-        title: qsTr("Assumption Checks")
-        CheckBox { name: "normalityTest"; label: qsTr("Normality") }
-        CheckBox { name: "equalityOfVariancesTest"; label: qsTr("Equality of variances") }
-    }
+	Section
+	{
+		title: qsTr("Statistics")
+
+		Group
+		{
+			title: qsTr("Sample size")
+			CheckBox { name: "valid";			label: qsTr("Valid");	checked: true
+						 info: qsTr("Number of valid observations")}
+			CheckBox { name: "missing";			label: qsTr("Missing");	checked: true	}
+		}
+	}
 }
 ```
 

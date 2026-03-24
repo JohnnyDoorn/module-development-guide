@@ -35,56 +35,46 @@ Every item in `jaspResults` declares which options it **depends on** (via `$depe
 
 This is why every output function starts with `if (!is.null(jaspResults[["myTable"]])) return()` — if the table already exists and its dependencies haven't changed, skip it entirely.
 
-### Real-world example: Independent Samples T-Test
+### Sketch of an analysis
 
-Here's how the actual JASP t-test module uses `jaspResults` (simplified from the source):
+Here is the shape every JASP analysis follows (the full runnable version is in the [Analysis Skeleton](appendix-skeleton.qmd) appendix):
 
 ```r
-TTestIndependentSamples <- function(jaspResults, dataset, options) {
-  ready <- length(options[["dependent"]]) > 0 && options[["group"]] != ""
+MyAnalysis <- function(jaspResults, dataset, options) {
+  ready <- length(options[["variables"]]) > 0          # 1. ready check
 
-  if (ready)
-    .ttestCheckErrors(dataset, options, "independent")
+  if (ready) {
+    .myAnalysisCheckErrors(dataset, options)             # 2. error check
+    .myAnalysisComputeResults(jaspResults, dataset, options) # 3. compute & store
+  }
 
-  # Each function reaches into jaspResults for what it needs
-  .ttestMainTable(      jaspResults, dataset, options, ready)
-  .ttestNormalTable(    jaspResults, dataset, options, ready)
-  .ttestQQPlot(         jaspResults, dataset, options, ready)
-  .ttestDescriptives(   jaspResults, dataset, options, ready)
-  .ttestDescriptivePlot(jaspResults, dataset, options, ready)
+  .myAnalysisMainTable(jaspResults, options, ready)      # 4. table
+  .myAnalysisPlot(     jaspResults, options, ready)      # 5. plot
 
   return()
 }
 ```
 
-Notice: **no return values are passed between functions**. Every function writes to and reads from `jaspResults`. If the user only toggles the "Descriptives" checkbox, only `.ttestDescriptives()` and `.ttestDescriptivePlot()` re-run — the main table is still cached.
+Notice: **no return values are passed between functions**. `.myAnalysisComputeResults()` stores the model in `jaspResults`; the table and plot functions retrieve it from there. If the user only toggles a plot checkbox, the model and table are still cached — only the plot is recreated.
 
 ## The analysis function pattern {#sec-main-function}
 
 Every JASP analysis follows the same structure. The main function name must match the `func` field in `Description.qml` (case-sensitive). It always receives three arguments:
-
-```r
-MyAnalysis <- function(jaspResults, dataset, options) {
-  # 1. Check if we can compute results
-  ready <- length(options[["variables"]]) > 0
-
-  # 2. Validate data
-  if (ready)
-    .myCheckErrors(dataset, options)
-
-  # 3. Create outputs (tables, plots)
-  .myMainTable(jaspResults, dataset, options, ready)
-  .myMainPlot(jaspResults, dataset, options, ready)
-
-  return()
-}
-```
 
 | Argument | Description |
 |----------|-------------|
 | `jaspResults` | The persistent results container — store all tables, plots, state, and containers here |
 | `dataset` | The dataset, preloaded by JASP when `preloadData: true` (the default and recommended setting). `NULL` if `preloadData: false` |
 | `options` | Named list of user selections from the QML form |
+
+The main function orchestrates the analysis by calling helper functions. Think of it as a recipe:
+
+1. **Ready check** — can we compute? (are variables assigned?)
+2. **Error check** — is the data valid?
+3. **Compute** — fit the model, store results in `jaspResults`
+4. **Output** — create tables and plots that retrieve results from `jaspResults`
+
+The rest of this chapter walks through each step using a single running example. See the [Analysis Skeleton](appendix-skeleton.qmd) appendix for the complete copy-paste template.
 
 ::: {.callout-important}
 Always access options with double brackets: `options[["myOption"]]`. Single brackets or `$` allow partial matching which can cause subtle bugs.
@@ -205,32 +195,38 @@ Tables are the most common output. The lifecycle:
 5. **Attach to output** — `jaspResults[["myTable"]] <- table`
 6. **Fill with data** — `$addRows(list(...))`
 
+Continuing our running example — the table retrieves the model from `jaspResults`:
+
 ```r
-.myMainTable <- function(jaspResults, dataset, options, ready) {
-  # Skip if already computed and cached
-  if (!is.null(jaspResults[["myTable"]])) return()
+.myAnalysisMainTable <- function(jaspResults, options, ready) {
+  # Skip if already cached
+  if (!is.null(jaspResults[["mainTable"]])) return()
 
   # Create and configure
-  table <- createJaspTable(title = gettext("My Results"))
-  table$dependOn(c("variables", "ciLevel"))
+  table <- createJaspTable(title = gettext("Results"))
+  table$dependOn(c("variables", "dependent"))
 
   # Define columns
-  table$addColumnInfo(name = "variable", title = gettext("Variable"), type = "string")
-  table$addColumnInfo(name = "mean",     title = gettext("Mean"),     type = "number")
-  table$addColumnInfo(name = "p",        title = "p",                 type = "pvalue")
+  table$addColumnInfo(name = "term",     title = gettext("Term"),       type = "string")
+  table$addColumnInfo(name = "estimate", title = gettext("Estimate"),   type = "number")
+  table$addColumnInfo(name = "se",       title = gettext("Std. Error"), type = "number")
+  table$addColumnInfo(name = "p",        title = "p",                   type = "pvalue")
 
-  # Attach to jaspResults (displays immediately, even if empty)
-  jaspResults[["myTable"]] <- table
+  # Attach to jaspResults — shows an empty placeholder immediately
+  jaspResults[["mainTable"]] <- table
 
   if (!ready) return()
 
-  # Fill with results
-  for (variable in options[["variables"]]) {
-    results <- t.test(dataset[[variable]])
+  # Retrieve the cached model and fill
+  results <- jaspResults[["myAnalysisState"]]$object
+  coefTab <- summary(results$model)$coefficients
+
+  for (i in seq_len(nrow(coefTab))) {
     table$addRows(list(
-      variable = variable,
-      mean     = results$estimate,
-      p        = results$p.value
+      term     = rownames(coefTab)[i],
+      estimate = coefTab[i, "Estimate"],
+      se       = coefTab[i, "Std. Error"],
+      p        = coefTab[i, "Pr(>|t|)"]
     ))
   }
 }
@@ -270,18 +266,29 @@ if (inherits(result, "try-error")) {
 Plots follow the same pattern. JASP only supports `ggplot2`.
 
 ```r
-.myMainPlot <- function(jaspResults, dataset, options, ready) {
-  if (!is.null(jaspResults[["myPlot"]])) return()
+.myAnalysisPlot <- function(jaspResults, options, ready) {
+  if (!options[["residualPlot"]]) return()  # only if user enabled the checkbox
+  if (!is.null(jaspResults[["residualPlot"]])) return()
 
-  plot <- createJaspPlot(title = gettext("My Plot"), width = 480, height = 320)
-  plot$dependOn(c("variables", "plotOption"))
-  jaspResults[["myPlot"]] <- plot
+  plot <- createJaspPlot(title = gettext("Residuals vs. Fitted"),
+                         width = 480, height = 320)
+  plot$dependOn(c("variables", "dependent", "residualPlot"))
+  jaspResults[["residualPlot"]] <- plot
 
   if (!ready) return()
 
-  p <- ggplot2::ggplot(dataset, ggplot2::aes(x = .data[[options[["variables"]][1]]]])) +
-    ggplot2::geom_histogram()
-  plot$plotObject <- p
+  # Retrieve cached model
+  results  <- jaspResults[["myAnalysisState"]]$object
+  plotData <- data.frame(
+    fitted    = fitted(results$model),
+    residuals = residuals(results$model)
+  )
+
+  plot$plotObject <- ggplot2::ggplot(plotData,
+      ggplot2::aes(x = .data[["fitted"]], y = .data[["residuals"]])) +
+    ggplot2::geom_point() +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+    ggplot2::labs(x = gettext("Fitted values"), y = gettext("Residuals"))
 }
 ```
 
@@ -297,7 +304,85 @@ HTML tags (`<b>`, `<i>`) can be used for formatting.
 
 ## Containers: grouping output elements {#sec-containers}
 
-Containers group related tables and plots visually and functionally. Dependencies set on a container are inherited by all its contents.
+Containers group related tables and plots visually and functionally. The key benefit: **dependencies set on a container are inherited by all its contents**. When a depended-on option changes, JASP automatically empties the entire container (sets it to `NULL`), so all its tables, plots, and state are recreated together.
+
+### Container as a caching gate
+
+A common pattern is to put the model state *inside* a container, then check whether the container is `NULL` to decide if results need to be (re)computed:
+
+```r
+MyAnalysis <- function(jaspResults, dataset, options) {
+  ready <- length(options[["variables"]]) > 0
+
+  if (ready) {
+    .myCheckErrors(dataset, options)
+    .myComputeResults(jaspResults, dataset, options)
+  }
+
+  .myMainTable(jaspResults, options, ready)
+  .myPlot(     jaspResults, options, ready)
+
+  return()
+}
+
+.myComputeResults <- function(jaspResults, dataset, options) {
+  # If the container still exists, all results inside it are still valid
+  # — nothing to do.
+  # If it is NULL, either:
+  #   (a) this is the first time the analysis runs, or
+  #   (b) the user changed an option the container depends on,
+  #       so JASP emptied it and we must recompute.
+  if (!is.null(jaspResults[["resultsContainer"]]))
+    return()
+
+  container <- createJaspContainer(title = gettext("Results"))
+  container$dependOn(c("dependent", "variables", "method"))
+  jaspResults[["resultsContainer"]] <- container
+
+  # Expensive computation
+  model   <- lm(as.formula(paste(options[["dependent"]], "~ .")),
+                 data = dataset)
+  results <- list(model = model)
+
+  # Store inside the container — lives and dies with it
+  container[["state"]] <- createJaspState(results)
+}
+```
+
+Because the state lives *inside* the container, it is automatically discarded when the container is invalidated — no separate `$dependOn()` needed on the state itself.
+
+The output functions then retrieve the model from the container:
+
+```r
+.myMainTable <- function(jaspResults, options, ready) {
+  if (!is.null(jaspResults[["resultsContainer"]][["mainTable"]])) return()
+
+  table <- createJaspTable(title = gettext("Coefficients"))
+  # No need to repeat dependOn — inherited from the container
+  jaspResults[["resultsContainer"]][["mainTable"]] <- table
+
+  if (!ready) return()
+
+  results <- jaspResults[["resultsContainer"]][["state"]]$object
+  coefTab <- summary(results$model)$coefficients
+
+  for (i in seq_len(nrow(coefTab))) {
+    table$addRows(list(
+      term     = rownames(coefTab)[i],
+      estimate = coefTab[i, "Estimate"],
+      p        = coefTab[i, "Pr(>|t|)"]
+    ))
+  }
+}
+```
+
+::: {.callout-tip}
+**When to use a container vs. bare `jaspResults` slots**: if several outputs share the same set of dependencies and should all recompute together, wrap them in a container and set `$dependOn()` once. If an output has unique dependencies (e.g., a plot toggled by its own checkbox), attach it directly to `jaspResults` with its own `$dependOn()`.
+:::
+
+### Per-value dependencies
+
+For loops over variables, use `optionContainsValue` so that adding or removing one variable only invalidates that specific element:
 
 ```r
 container <- createJaspContainer(title = gettext("Descriptive Plots"))
@@ -317,6 +402,8 @@ for (variable in options[["variables"]]) {
 
 ![Visual grouping example](img/r-guide/example_visual_grouping.png)
 
+### Container errors
+
 Setting an error on a container propagates to all its contents:
 
 ```r
@@ -326,68 +413,30 @@ if (container$getError()) return()
 
 ## State: caching computed results {#sec-state}
 
-When multiple output elements (tables, plots, assumption checks) share the same expensive computation, you don't want to run it separately for each. Use `createJaspState()` to **store any R object** in `jaspResults` and retrieve it later:
+When multiple output elements (tables, plots, assumption checks) share the same expensive computation, you don't want to run it separately for each. Use `createJaspState()` to **store any R object** in `jaspResults` and retrieve it later.
+
+Continuing our running example — here is the compute function. It stores the model in `jaspResults` and returns nothing:
 
 ```r
-.myComputeResults <- function(jaspResults, dataset, options) {
-  # Already cached? Return immediately.
-  if (!is.null(jaspResults[["myState"]]))
-    return(jaspResults[["myState"]]$object)
+.myAnalysisComputeResults <- function(jaspResults, dataset, options) {
+  # Already cached? Nothing to do.
+  if (!is.null(jaspResults[["myAnalysisState"]]))
+    return()
 
   # Expensive computation (e.g., fitting a model)
-  results <- list(model = lm(y ~ x, data = dataset))
+  results <- list(
+    model = lm(as.formula(paste(options[["dependent"]], "~ .")),
+               data = dataset)
+  )
 
-  # Store in jaspResults — cached until dependencies change
+  # Store in jaspResults — invalidated automatically when dependencies change
   state <- createJaspState(results)
-  state$dependOn(c("dependent", "covariates"))
-  jaspResults[["myState"]] <- state
-
-  return(results)
+  state$dependOn(c("dependent", "variables"))
+  jaspResults[["myAnalysisState"]] <- state
 }
 ```
 
-Now both the table function and the plot function call `.myComputeResults()`. On the first call, the model is fitted and stored. On the second call, the cached result is returned instantly.
-
-### Real-world example: Correlation module
-
-The JASP Correlation analysis computes one set of correlation results and reuses them across the main table, assumption checks, scatter plot, and heatmap:
-
-```r
-CorrelationInternal <- function(jaspResults, dataset, options) {
-  ready <- length(options[["variables"]]) >= 2
-
-  if (ready)
-    .hasErrors(dataset, type = c("infinity", "variance", "observations"),
-               observations.amount  = "< 3",
-               observations.target  = options[["variables"]],
-               exitAnalysisIfErrors = TRUE)
-
-  # Compute once, reuse everywhere
-  corrResults <- .corrMainResults(jaspResults, dataset, options, ready)
-
-  .corrAssumptions(jaspResults, dataset, options, ready, corrResults)
-  .corrPlot(       jaspResults, dataset, options, ready, corrResults)
-  .corrHeatmap(    jaspResults, options,          ready, corrResults)
-
-  return()
-}
-
-.corrMainResults <- function(jaspResults, dataset, options, ready) {
-  # Return cached results if both the table and state still exist
-  if (!is.null(jaspResults[["mainTable"]]) && !is.null(jaspResults[["results"]]))
-    return(jaspResults[["results"]]$object)
-
-  mainTable <- .corrInitMainTable(jaspResults, options)
-
-  corrResults <- .corrComputeResults(jaspResults, dataset, options, ready)
-
-  .corrFillTableMain(mainTable, corrResults, options, ready)
-
-  return(corrResults)
-}
-```
-
-The pattern: `.corrMainResults()` either returns the cached state or computes fresh results. Either way, it returns the same object, and every downstream function uses it without caring whether it was cached or freshly computed.
+The main function calls `.myAnalysisComputeResults()` once. The table and plot functions (shown above in @sec-tables and @sec-plots) both retrieve the cached results via `jaspResults[["myAnalysisState"]]$object`. On the first run the model is fitted and stored; on subsequent runs where the dependencies haven't changed, the function returns immediately and the table and plot reuse the cached model.
 
 ### What can you store in state?
 

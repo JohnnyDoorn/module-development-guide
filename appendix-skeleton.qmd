@@ -28,9 +28,13 @@ MyAnalysis <- function(jaspResults, dataset, options) {
   if (ready)
     .myAnalysisCheckErrors(dataset, options)
 
-  # 3. Create output — each function writes to jaspResults in place
-  .myAnalysisMainTable(jaspResults, dataset, options, ready)
-  .myAnalysisPlot(     jaspResults, dataset, options, ready)
+  # 3. Compute (stores result in jaspResults)
+  if (ready)
+    .myAnalysisComputeResults(jaspResults, dataset, options)
+
+  # 4. Create output — each function writes to jaspResults in place
+  .myAnalysisMainTable(jaspResults, options, ready)
+  .myAnalysisPlot(     jaspResults, options, ready)
 
   return()
 }
@@ -47,9 +51,9 @@ MyAnalysis <- function(jaspResults, dataset, options) {
 
 # Compute (cached) ----
 .myAnalysisComputeResults <- function(jaspResults, dataset, options) {
-  # Return cached results if available
+  # Already cached? Nothing to do.
   if (!is.null(jaspResults[["myAnalysisState"]]))
-    return(jaspResults[["myAnalysisState"]]$object)
+    return()
 
   # --- expensive computation goes here ---
   results <- list(
@@ -57,16 +61,14 @@ MyAnalysis <- function(jaspResults, dataset, options) {
                data = dataset)
   )
 
-  # Cache — invalidated automatically when dependencies change
+  # Store in jaspResults — invalidated automatically when dependencies change
   state <- createJaspState(results)
   state$dependOn(c("dependent", "variables"))
   jaspResults[["myAnalysisState"]] <- state
-
-  return(results)
 }
 
 # Table ----
-.myAnalysisMainTable <- function(jaspResults, dataset, options, ready) {
+.myAnalysisMainTable <- function(jaspResults, options, ready) {
   # 1. Skip if already cached
   if (!is.null(jaspResults[["mainTable"]])) return()
 
@@ -86,8 +88,8 @@ MyAnalysis <- function(jaspResults, dataset, options) {
   # 5. Not ready yet? Show the placeholder (dots)
   if (!ready) return()
 
-  # 6. Compute (or retrieve from cache) and fill
-  results  <- .myAnalysisComputeResults(jaspResults, dataset, options)
+  # 6. Retrieve cached results and fill
+  results  <- jaspResults[["myAnalysisState"]]$object
   coefTab  <- summary(results$model)$coefficients
 
   for (i in seq_len(nrow(coefTab))) {
@@ -101,7 +103,7 @@ MyAnalysis <- function(jaspResults, dataset, options) {
 }
 
 # Plot ----
-.myAnalysisPlot <- function(jaspResults, dataset, options, ready) {
+.myAnalysisPlot <- function(jaspResults, options, ready) {
   # Only create when the user enables the checkbox
   if (!options[["residualPlot"]]) return()
   if (!is.null(jaspResults[["residualPlot"]])) return()
@@ -113,7 +115,8 @@ MyAnalysis <- function(jaspResults, dataset, options) {
 
   if (!ready) return()
 
-  results <- .myAnalysisComputeResults(jaspResults, dataset, options)
+  # Retrieve cached results
+  results <- jaspResults[["myAnalysisState"]]$object
 
   plotData <- data.frame(
     fitted    = fitted(results$model),
@@ -136,7 +139,7 @@ MyAnalysis <- function(jaspResults, dataset, options) {
 | Private helpers start with `.myAnalysis` | Hidden from `NAMESPACE`; prefix avoids name collisions across modules |
 | `ready` flag checked first | Lets output functions show empty placeholders before input is complete |
 | `dataset` provided by JASP | `preloadData: true` in `Description.qml` — data arrives ready to use, no read function needed |
-| `.myAnalysisComputeResults()` returns from cache or computes | Both the table and the plot call it; work is done only once |
+| `.myAnalysisComputeResults()` stores model in `jaspResults` | Called once from main function; table and plot retrieve it via `jaspResults[["myAnalysisState"]]$object` |
 | `if (!is.null(...)) return()` at start of output functions | Avoids recreating cached output |
 | Table attached **before** filling it | User sees a placeholder immediately; data fills in after computation |
 | `$dependOn(...)` on every element | Tells JASP when to invalidate and recompute |
