@@ -2,10 +2,10 @@
 title: "QML Style Example"
 ---
 
-This annotated example demonstrates the approved QML coding style for JASP module forms.
+This annotated example demonstrates the approved QML coding style for a JASP analysis form. It covers variable assignment, grouped options, collapsible sections, radio buttons, and dropdowns.
 
 ```qml
-// Every QML form should have Form as its root element.
+// Every QML form has Form as its root element.
 // Indent with tabs (4-space width), not spaces.
 // Opening braces go on their own line, aligned with the closing brace.
 
@@ -15,50 +15,101 @@ import JASP.Controls
 
 Form
 {
+    // --- Variable assignment ---
+    // VariablesForm creates the familiar drag-and-drop variable lists.
+    VariablesForm
+    {
+        AvailableVariablesList { name: "availableVariables"                                              }
+        AssignedVariablesList  { name: "dependent"; title: qsTr("Dependent Variable"); singleVariable: true;
+                                 allowedColumns: ["scale"]                                               }
+        AssignedVariablesList  { name: "variables"; title: qsTr("Covariates"); allowedColumns: ["scale"] }
+        AssignedVariablesList  { name: "groupvar";  title: qsTr("Grouping Variable"); singleVariable: true;
+                                 allowedColumns: ["nominal", "ordinal"]                                  }
+    }
+
+    // --- Grouped options ---
+    // Group draws a titled box around related controls.
     Group
     {
-        title: qsTr("A nice grouping of elements")
+        title: qsTr("Model")
 
-        // Multiple properties: each on its own line,
-        // values aligned at the same indent for readability.
+        // Multiple properties: each on its own line, values aligned.
         IntegerField
         {
-            id:             theRightWayForSpecifyingProperties
-            name:           "someInteger"
+            name:           "polynomialDegree"
+            label:          qsTr("Polynomial degree")
             defaultValue:   1
-            min:            0
-            max:            123
-            text:           qsTr("You can enter an integer here: ")
-            fieldWidth:     100
-            toolTip:        qsTr("This is an incredibly useful tooltip right?")
+            min:            1
+            max:            5
         }
 
-        // Exception: simple elements with few properties can be one-liners.
-        // Align properties across lines for visual consistency.
-        Group
+        DropDown
         {
-            id: someCheckBoxes
-
-            CheckBox { name: "checkBoxA"; label: qsTr("The first checkbox"); checked: true }
-            CheckBox { name: "checkBoxB"; label: qsTr("The second checkbox")               }
-            CheckBox { name: "checkBoxC"; label: qsTr("The last checkbox")                  }
+            name:           "method"
+            label:          qsTr("Estimation method")
+            indexDefaultValue: 0
+            values:
+            [
+                { label: qsTr("OLS"),          value: "ols"  },
+                { label: qsTr("Robust (HC3)"), value: "hc3"  },
+                { label: qsTr("Bootstrap"),    value: "boot" }
+            ]
         }
+    }
 
-        // Variable lists also commonly use the one-liner pattern.
-        VariablesForm
+    // --- Simple one-liners ---
+    // Exception: elements with few short properties can be on one line.
+    // Align values across stacked one-liners for visual consistency.
+    Group
+    {
+        title: qsTr("Statistics")
+
+        CheckBox { name: "meanDifference";    label: qsTr("Mean difference"); checked: true }
+        CheckBox { name: "effectSize";        label: qsTr("Effect size")                    }
+        CheckBox { name: "confidenceInterval"; label: qsTr("Confidence interval")            }
+
+        // CIField appears only when its parent checkbox is enabled.
+        CIField  { name: "confidenceIntervalLevel" }
+    }
+
+    // --- Collapsible section ---
+    // Section creates a collapsible accordion in the UI.
+    // Use it for secondary or advanced options to keep the form clean.
+    Section
+    {
+        title: qsTr("Assumption Checks")
+
+        CheckBox { name: "normalityTest";       label: qsTr("Normality test")        }
+        CheckBox { name: "equalityOfVariances"; label: qsTr("Equality of variances") }
+        CheckBox { name: "qqPlot";              label: qsTr("Q-Q plot")              }
+    }
+
+    // Sections can contain any combination of controls.
+    Section
+    {
+        title: qsTr("Plots")
+
+        CheckBox
         {
-            AvailableVariablesList { name: "availableVariables"                                                      }
-            AssignedVariablesList  { name: "variables"; title: qsTr("Variables")                                     }
-            AssignedVariablesList  { name: "splitby";   title: qsTr("Split"); singleVariable: true;
-                                    allowedColumns: ["ordinal", "nominal"]                                           }
+            name:   "residualPlot"
+            label:  qsTr("Residuals vs. fitted")
         }
 
-        // In most cases, follow the multi-line style shown at IntegerField above.
+        // RadioButtonGroup gives mutually exclusive choices.
+        RadioButtonGroup
+        {
+            name:   "colorScheme"
+            title:  qsTr("Color scheme")
+
+            RadioButton { value: "jasp";       label: qsTr("JASP");        checked: true }
+            RadioButton { value: "colorblind"; label: qsTr("Colorblind")                 }
+            RadioButton { value: "grayscale";  label: qsTr("Grayscale")                  }
+        }
     }
 }
 ```
 
-### Style Rules Summary
+### Style rules summary
 
 | Rule | Detail |
 |------|--------|
@@ -68,4 +119,6 @@ Form
 | **One-liner exception** | Simple elements (CheckBox, VariablesList) with ≤ 3 short properties |
 | **One-liner alignment** | Align property values across stacked one-liners |
 | **Strings** | Wrap all user-visible text in `qsTr()` |
-| **Spacing** | One blank line between subitems / property groups |
+| **Spacing** | One blank line between logical groups of controls |
+| **Sections** | Use `Section` for secondary/advanced options — keeps the main form compact |
+| **VariablesForm first** | Place the variable assignment block at the top of the form |
