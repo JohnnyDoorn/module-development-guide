@@ -81,7 +81,7 @@
     "href": "setup.html#sec-dev-cycle",
     "title": "2  Setting Up Your Environment",
     "section": "The development cycle",
-    "text": "The development cycle\n\n\n\n\ngraph LR\n  A[Edit R/QML files] --&gt; B[Recompile module]\n  B --&gt; C[Refresh in JASP]\n  C --&gt; D[Test changes]\n  D --&gt; A\n\n\n\n\n\n\nEdit your R and/or QML files in your editor of choice\nRecompile: R CMD INSTALL . --preclean --no-multiarch --with-keep.source\nRefresh: in JASP, click + → find your module → click the blue refresh button (🔄)\n\nWith renv mode, you must recompile to see changes. Without renv mode (deprecated), some changes are reflected immediately but the install process is more fragile.\n\n\n\n\n\n\nTip\n\n\n\nStart with the QML interface before writing the R analysis. This lets you iterate on the UI quickly and see option names before writing the backend code."
+    "text": "The development cycle\n\n\n\n\ngraph LR\n  A[Edit R/QML files] --&gt; B[Recompile module]\n  B --&gt; C[Refresh in JASP]\n  C --&gt; D[Test changes]\n  D --&gt; A\n\n\n\n\n\n\nEdit your R and/or QML files in your editor of choice\nRecompile: R CMD INSTALL . --preclean --no-multiarch --with-keep.source\nRefresh: in JASP, click + → find your module → click the blue refresh button (🔄)\n\nYou must recompile to see changes — JASP loads from the installed package in the renv library.\n\n\n\n\n\n\nTip\n\n\n\nStart with the QML interface before writing the R analysis. This lets you iterate on the UI quickly and see option names before writing the backend code."
   },
   {
     "objectID": "anatomy.html#file-structure",

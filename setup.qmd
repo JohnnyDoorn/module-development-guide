@@ -217,7 +217,7 @@ graph LR
 2. **Recompile**: `R CMD INSTALL . --preclean --no-multiarch --with-keep.source`
 3. **Refresh**: in JASP, click **+** → find your module → click the blue refresh button (🔄)
 
-With renv mode, you must recompile to see changes. Without renv mode (deprecated), some changes are reflected immediately but the install process is more fragile.
+You must recompile to see changes — JASP loads from the installed package in the renv library.
 
 ::: {.callout-tip}
 Start with the QML interface before writing the R analysis. This lets you iterate on the UI quickly and see option names before writing the backend code.
