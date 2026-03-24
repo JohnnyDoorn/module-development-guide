@@ -109,7 +109,7 @@ You don't need to be a Git expert to develop JASP modules, but a few concepts co
 - [GitHub Skills](https://skills.github.com/) — interactive tutorials for learning Git with GitHub
 - [Oh My Git!](https://ohmygit.org/) — a game to learn Git visually
 
-For the JASP-specific Git workflow (forking, branching, pull requests), see the [Git Workflow](git-workflow.qmd) chapter.
+For the JASP-specific Git workflow (forking, branching, pull requests), see the [Git Workflow](git-workflow.qmd) chapter. That chapter builds on the basics covered here and explains the day-to-day workflow you'll use when contributing to JASP modules. The [Publishing Your Module](publishing.qmd) chapter covers how to submit your module to the JASP Module Library.
 
 ## Fork and clone the module template
 

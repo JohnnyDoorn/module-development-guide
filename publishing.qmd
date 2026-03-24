@@ -1,6 +1,6 @@
 # Publishing Your Module {#sec-publishing}
 
-This chapter covers how to submit a new community module, update an existing one, and what quality criteria to meet for both community and official JASP modules. {#sec-publishing}
+This chapter covers how to submit a new community module, update an existing one, and what quality criteria to meet for both community and official JASP modules. The submission process uses Git and GitHub — if you're not yet comfortable with those, review the [Git basics](setup.qmd#sec-git-setup) in the setup chapter and the [Git Workflow](git-workflow.qmd) chapter first.
 
 ## Community Module Submission
 

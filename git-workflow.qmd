@@ -4,6 +4,8 @@ title: "Git Workflow"
 
 JASP uses a fork-based Git workflow. Every contributor works on their own fork, then submits pull requests to the upstream `jasp-stats/` repositories.
 
+If you're new to Git, the [Setting Up Your Environment](setup.qmd#sec-git-setup) chapter covers installation, configuration, and the key concepts you'll need before diving into this workflow.
+
 ## Setup
 
 ```bash
