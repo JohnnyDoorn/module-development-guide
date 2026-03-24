@@ -92,7 +92,7 @@ Most analyses need minimum input before computing. Determine this early:
 ready <- length(options[["variables"]]) > 0
 ```
 
-When `ready` is `FALSE`, your output functions should still create tables and plots (showing dots/empty placeholders) but skip the computation step.
+When `ready` is `FALSE`, your output functions should still create and attach tables and plots — they just won't fill in the data yet, so the user sees an empty placeholder with dots. Once the user assigns variables and `ready` becomes `TRUE`, the results are computed and filled in. See the [table example in Step 5](#sec-tables) for how this works in practice: the table is fully configured and attached *before* the `if (!ready) return()` check.
 
 ```{mermaid}
 flowchart LR
@@ -251,15 +251,38 @@ table$addFootnote(message = "...", colNames = "p", rowNames = "var1")
 
 #### Reporting errors on tables
 
-Use `try()` + `$setError()` to handle computation failures gracefully:
+When a computation can fail, wrap it in `try()` and use `$setError()` to display a meaningful message on the table (or container) instead of crashing the analysis:
 
 ```r
-result <- try(someComputation())
-if (inherits(result, "try-error")) {
-  table$setError(as.character(result))
+model <- try(lm(y ~ x, data = dataset))
+if (isTryError(model)) {
+  container$setError(.extractErrorMessage(model))
   return()
 }
 ```
+
+For known failure modes you can match the error message and provide a more helpful, translated explanation:
+
+```r
+if (isTryError(model)) {
+  errorMsg <- .extractErrorMessage(model)
+
+  if (errorMsg == "singular fit encountered") {
+    container$setError(gettext(
+      "Singular fit encountered; one or more predictor variables are a linear combination of other predictor variables"
+    ))
+  } else if (errorMsg == "residual sum of squares is 0 (within rounding error)") {
+    container$setError(gettext(
+      "Residual sum of squares is 0; this might be due to extremely low variance of your dependent variable"
+    ))
+  } else {
+    container$setError(errorMsg)
+  }
+  return()
+}
+```
+
+Note: `$setError()` works on tables, plots, and containers. Setting it on a container marks all its contents as errored (see @sec-containers).
 
 ### Plots {#sec-plots}
 
