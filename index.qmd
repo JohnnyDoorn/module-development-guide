@@ -43,3 +43,7 @@ The fastest path to a working module:
 5.  Edit R and QML files, recompile, refresh — iterate
 
 The rest of this guide explains each step in detail.
+
+::: {.callout-tip title="Get direct support from the JASP team"}
+If you are developing a JASP module, you can request an invitation to the **JASP Mattermost channel** — a team chat where you can get direct help from JASP developers. Contact the JASP team via [jasp-stats.org](https://jasp-stats.org) to request access.
+:::

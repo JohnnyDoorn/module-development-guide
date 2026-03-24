@@ -2,21 +2,6 @@
 title: "Learning Resources"
 ---
 
-## Prerequisites Map
-
-The diagram below shows the minimum technical skills required for JASP module development and the optional advanced skills that extend from them.
-
-```{mermaid}
-graph TD
-    subgraph Minimum
-        git --> github
-        R --> Functions
-    end
-
-    Template --> QML
-    Functions --> Packaging
-```
-
 ## Curated Learning Materials
 
 ### Git and GitHub
@@ -42,10 +27,6 @@ graph TD
 - Lessons 1–7: basics including unit testing and dependency management
 - Lessons 9–10: good but optional
 
-### QML Interface Building
-
-The best way to learn QML for JASP is by following the [JASP Module Tutorial](https://github.com/jasp-stats/jasp-desktop/blob/development/Docs/development/jasp-modules-tutorial.md), which includes the ready-to-use [jaspModuleTemplate](https://github.com/jasp-stats/jaspModuleTemplate).
-
 ## Additional References
 
 | Topic | Resource |
@@ -56,3 +37,7 @@ The best way to learn QML for JASP is by following the [JASP Module Tutorial](ht
 | JASP source code | [github.com/jasp-stats/jasp-desktop](https://github.com/jasp-stats/jasp-desktop) |
 | Community modules | [github.com/jasp-stats-modules](https://github.com/jasp-stats-modules) |
 | Mattermost (team chat) | Contact the JASP team for an invitation |
+
+::: {.callout-tip title="Get direct support from the JASP team"}
+If you are actively developing a JASP module, you can request an invitation to the **JASP Mattermost channel** — a team chat where you can ask questions, share progress, and get direct help from JASP developers. Contact the JASP team via [jasp-stats.org](https://jasp-stats.org) to request access.
+:::

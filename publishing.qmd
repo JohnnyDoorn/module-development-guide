@@ -67,7 +67,7 @@ All items should be completed before requesting an official release.
 - [ ] Correct **license headers** on all source files (@sec-licensing)
 - [ ] **R style** compliance (@sec-r-style)
 - [ ] **QML style** compliance (@sec-qml-style)
-- [ ] Standardised **error messages** (@sec-appendix-errors)
+- [ ] Standardised **error messages** (@sec-error-checking)
 
 ### Community JASP Module Checklist {#sec-checklist-community}
 

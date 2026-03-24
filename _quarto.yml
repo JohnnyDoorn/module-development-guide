@@ -46,7 +46,6 @@ book:
     - appendix-skeleton.qmd
     - appendix-qml-style.qmd
     - appendix-option-names.qmd
-    - appendix-errors.qmd
     - appendix-resources.qmd
 
 format:

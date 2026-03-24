@@ -97,8 +97,6 @@ Use these exact phrasings when the situation matches. This ensures consistency a
 
 > "The posterior samples could not be obtained. Consider increasing the number of MCMC samples."
 
-See @sec-appendix-errors for the full error message catalogue organized by analysis type.
-
 ## Assumption Checking
 
 JASP analyses should check assumptions and report violations as footnotes:
