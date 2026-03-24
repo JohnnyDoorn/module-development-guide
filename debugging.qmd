@@ -1,0 +1,86 @@
+---
+title: "Debugging & Logging"
+---
+
+When an analysis fails or produces unexpected output, JASP's logging system helps you trace the problem.
+
+## Enabling Logging
+
+1. Open JASP.
+2. Click the hamburger menu (☰) → **Preferences**.
+3. Go to **Advanced Preferences**.
+4. Toggle **logging** on.
+
+JASP writes one log per session, with separate files for the Desktop process and each Engine process.
+
+## Log File Locations
+
+| Platform | Path |
+|----------|------|
+| Windows | `%USERPROFILE%\AppData\Roaming\JASP\JASP\Logs` |
+| macOS | `~/Library/Application Support/JASP/JASP/Logs/` |
+| Linux (Flatpak) | `~/.var/app/org.jaspstats.JASP/data/JASP/JASP/Logs` |
+
+### Finding the Right Log
+
+Logs are named: `JASP YYYY-MM-DD HH_MM_SS Desktop.log` (and `Engine0.log`, `Engine1.log`, etc.)
+
+Collect **all** files with the same timestamp to get the complete picture for a single session.
+
+## Viewing Logs
+
+### From Within JASP
+
+In Advanced Preferences, click **Show Logs** to open the log directory.
+
+### Command Line
+
+Launch JASP from a terminal with `--logToFile` to also print output to the console:
+
+::: {.panel-tabset}
+
+#### macOS
+
+```bash
+/Applications/JASP.app/Contents/MacOS/JASP --logToFile
+```
+
+#### Linux
+
+```bash
+flatpak run org.jaspstats.JASP --logToFile
+```
+
+#### Windows
+
+```cmd
+"C:\Program Files\JASP\JASP.exe" --logToFile 2>&1 | more
+```
+
+On Windows, pipe the output to `more` or redirect to a file to see it, since the console does not display output by default.
+
+:::
+
+## When JASP Won't Start
+
+If JASP crashes on startup, logs are often still written before the crash. Use the command-line launch method above to capture output, or check the log directory manually for the most recent files.
+
+## Debugging R Code
+
+For R analysis issues, it is often faster to debug outside JASP using `jaspTools` and R's `browser()` function. See @sec-jasptools-workflow for the full workflow, including:
+
+- Running analyses interactively with `jaspTools::runAnalysis()`
+- Setting breakpoints with `browser()`
+- Inspecting `jaspResults` objects mid-execution
+- The renv bootstrap script for setting up your environment
+4. Use RStudio's debugger (`browser()`, breakpoints) as usual.
+
+## Common Issues
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Analysis shows red error | R code threw an error | Check Engine log for stack trace; debug in RStudio |
+| Analysis runs but table is empty | Table not filled or wrong `$dependOn` key | Check that `addRows()` / `setData()` is called and dependencies match QML option names |
+| Plot is blank | `ggplot` object not assigned to plot element | Verify `plotObj$plotObject <- ggplot(...)` |
+| Module won't load | DESCRIPTION or NAMESPACE error | Check that `R CMD INSTALL .` succeeds without warnings |
+| Options not reaching R | QML `name` doesn't match R `options[[...]]` key | Compare QML `name:` values with R option access |

@@ -1,0 +1,58 @@
+---
+title: "Learning Resources"
+---
+
+## Prerequisites Map
+
+The diagram below shows the minimum technical skills required for JASP module development and the optional advanced skills that extend from them.
+
+```{mermaid}
+graph TD
+    subgraph Minimum
+        git --> github
+        R --> Functions
+    end
+
+    Template --> QML
+    Functions --> Packaging
+```
+
+## Curated Learning Materials
+
+### Git and GitHub
+
+[Software Carpentry: Version Control with Git](https://swcarpentry.github.io/git-novice/)
+
+- Lessons 1–6: learning Git
+- Lessons 7–9: learning GitHub
+- Lessons 10–14: optional (Lesson 14, "Using Git from RStudio", is particularly relevant)
+
+### R and Functions
+
+[Software Carpentry: R for Reproducible Scientific Analysis](https://swcarpentry.github.io/r-novice-gapminder/)
+
+- Lessons 1–9: R basics
+- Lesson 10: writing functions
+- Lessons 11–15: good but optional
+
+### R Packaging
+
+[Software Carpentry: R Packaging](https://carpentries-incubator.github.io/lesson-R-packaging/)
+
+- Lessons 1–7: basics including unit testing and dependency management
+- Lessons 9–10: good but optional
+
+### QML Interface Building
+
+The best way to learn QML for JASP is by following the [JASP Module Tutorial](https://github.com/jasp-stats/jasp-desktop/blob/development/Docs/development/jasp-modules-tutorial.md), which includes the ready-to-use [jaspModuleTemplate](https://github.com/jasp-stats/jaspModuleTemplate).
+
+## Additional References
+
+| Topic | Resource |
+|-------|----------|
+| JASP module template | [github.com/jasp-stats/jaspModuleTemplate](https://github.com/jasp-stats/jaspModuleTemplate) |
+| Agent instructions | [github.com/jasp-stats/jasp-agent-instructions](https://github.com/jasp-stats/jasp-agent-instructions) |
+| jaspTools (testing) | [github.com/jasp-stats/jaspTools](https://github.com/jasp-stats/jaspTools) |
+| JASP source code | [github.com/jasp-stats/jasp-desktop](https://github.com/jasp-stats/jasp-desktop) |
+| Community modules | [github.com/jasp-stats-modules](https://github.com/jasp-stats-modules) |
+| Mattermost (team chat) | Contact the JASP team for an invitation |

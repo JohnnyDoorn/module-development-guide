@@ -1,0 +1,61 @@
+project:
+  type: book
+  output-dir: docs
+  resources:
+    - img/theme/
+
+book:
+  title: "JASP Module Development Guide"
+  subtitle: "From first steps to publishing your module"
+  author: "JASP Development Team"
+  date: last-modified
+  repo-url: https://github.com/jasp-stats/jasp-desktop
+  repo-actions: [issue]
+  search: true
+  sidebar:
+    collapse-level: 1
+
+  chapters:
+    - index.qmd
+    - setup.qmd
+    - part: "Building Your Module"
+      chapters:
+        - anatomy.qmd
+        - qml-interface.qmd
+        - r-backend.qmd
+        - qml-r-connection.qmd
+        - jasptools-workflow.qmd
+    - part: "Improving Your Module"
+      chapters:
+        - coding-standards.qmd
+        - errors-ux.qmd
+        - testing.qmd
+        - debugging.qmd
+        - i18n.qmd
+        - upgrades.qmd
+    - part: "Finalizing Your Module"
+      chapters:
+        - versioning.qmd
+        - publishing.qmd
+        - git-workflow.qmd
+        - licensing.qmd
+        - building-jasp.qmd
+        - ai-assisted.qmd
+
+  appendices:
+    - appendix-skeleton.qmd
+    - appendix-qml-style.qmd
+    - appendix-option-names.qmd
+    - appendix-errors.qmd
+    - appendix-resources.qmd
+
+format:
+  html:
+    theme: cosmo
+    css: custom.css
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+    highlight-style: github

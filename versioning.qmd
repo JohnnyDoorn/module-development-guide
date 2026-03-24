@@ -1,0 +1,62 @@
+# Versioning & Releases {#sec-versioning}
+
+JASP module versions are decoupled from JASP desktop versions. Each module maintains its own version number, and you control when to bump it.
+
+## Version Numbers
+
+Module versions follow a three-part scheme: **major.minor.patch** (e.g., `0.19.1`). The version is defined in two places and must match:
+
+| File | Location |
+|------|----------|
+| `DESCRIPTION` | `Version: 0.19.1` |
+| `inst/Description.qml` | `version: "0.19.1"` |
+
+## When to Bump
+
+```{mermaid}
+flowchart TD
+    A[Module has a release] --> B[First change after release]
+    B --> C[Bump version number]
+    C --> D[Continue development]
+    D --> E{Satisfied?}
+    E -- No --> D
+    E -- Yes --> F[Ask core programmer to release]
+    F --> A
+```
+
+**Rule**: The very first commit after a release should bump the version number. This ensures that:
+
+- Beta builds show "Install Beta" rather than "Downgrade Beta" in JASP's module library.
+- JASP reloads the module properly between restarts.
+
+### How high to bump
+
+It does not matter which part you increment, as long as the new version is higher:
+
+- Small bug fix: `0.19.1` → `0.19.2`
+- New feature: `0.19.1` → `0.20.0`
+- Major rework: `0.19.1` → `1.0.0`
+
+You may also align with the current JASP release number (e.g., bump to `0.96` when JASP 0.96 ships), but this is optional.
+
+## Release Workflow for Official Modules
+
+Official modules live under `jasp-stats/` on GitHub.
+
+1. **Development**: push commits to `jasp-stats/jaspModuleName`. Every push auto-syncs to the module registry and triggers a **beta bundle** build.
+2. **Beta testing**: users can install beta bundles from JASP's module library for testing.
+3. **Release**: when the module is ready, ask a core programmer (lead developer) to create an official release.
+4. **Post-release**: immediately bump the version number for the next development cycle.
+
+## Release Workflow for Community Modules
+
+Community modules live under your personal GitHub account.
+
+1. **Development**: push to your own repository.
+2. **Submission**: register your module in the community registry (see @sec-publishing).
+3. **Updates**: open cross-fork PRs to the `jasp-stats-modules` fork of your repo.
+4. **Beta/Release**: after merge, automated systems build and publish a beta release.
+
+## Upgrades.qml and Versions
+
+Upgrade entries in `Upgrades.qml` reference **module versions**, not JASP versions. When you bump a version and rename or remove options, add an upgrade block targeting that version range (see @sec-upgrades).

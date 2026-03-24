@@ -1,0 +1,151 @@
+---
+title: "Building JASP from Source"
+---
+
+Most module developers do not need to build JASP desktop itself — installing your module into a JASP nightly build is sufficient (see @sec-setup). This chapter is for developers who need to modify JASP's core or debug integration issues.
+
+## Prerequisites (All Platforms)
+
+- **Git**: clone the repository and manage submodules.
+- **GITHUB_PAT**: a GitHub personal access token (no special scopes needed) to avoid API rate limits during the build.
+- **Qt 6.7+** with Qt Creator 13: the GUI framework.
+
+### Setting GITHUB_PAT
+
+Create a token at GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic). Then set it:
+
+::: {.panel-tabset}
+
+#### Environment Variable
+
+```bash
+# macOS / Linux — add to ~/.zshrc or ~/.bash_profile
+export GITHUB_PAT="ghp_your_token_here"
+```
+
+```cmd
+:: Windows — set via System Properties → Environment Variables
+set GITHUB_PAT=ghp_your_token_here
+```
+
+#### Qt Creator
+
+Project Settings → Build → Environment → Add: `GITHUB_PAT = ghp_your_token_here`
+
+#### JASP Preferences
+
+Preferences → Advanced → GitHub PAT
+
+:::
+
+### Clone and Initialise
+
+```bash
+git clone https://github.com/jasp-stats/jasp-desktop.git
+cd jasp-desktop
+git submodule update --init
+```
+
+## Platform-Specific Instructions
+
+::: {.panel-tabset}
+
+### Windows
+
+**Tools required**:
+
+- Visual Studio 2022 Community (Desktop C++ workload: MSVC v144, Windows 10 SDK, CMake tools)
+- Qt 6.7 with MSVC 2019 64-bit, Qt Compatibility Module, Qt WebEngine, Qt WebChannel, Qt Positioning
+- Qt Creator 13
+- RTools45 (default path `C:\rtools45`)
+- Conan ≥ 2.0.0
+- WiX Toolset (for building the installer)
+
+**RTools setup**:
+
+1. Install RTools45 to `C:\rtools45`.
+2. Open the ucrt64 console and install dependencies:
+   ```bash
+   pacman -Syu
+   pacman -S mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake
+   ```
+3. Build ReadStat and librdata manually (see platform-specific build guide for commands).
+4. Add `C:\rtools45\ucrt64\bin` to your PATH. Ensure the Qt path comes **before** the RTools path.
+
+**Conan setup**:
+
+```cmd
+pip install conan
+conan profile detect --name default
+```
+
+**Build**: in Qt Creator, select the "Desktop Qt 6.7 MSVC2019 64bit" kit, set `GITHUB_PAT` in the build environment, and click Build.
+
+### macOS
+
+**Tools required**:
+
+- Xcode (from the Mac App Store)
+- Qt 6.7 with Desktop kit, Qt Compatibility Module, Qt WebEngine, Qt WebChannel, Qt Positioning
+- Qt Creator 13
+- Homebrew packages: `conan cmake bison flex pkg-config automake autoconf create-dmg parallel ninja`
+- R.framework (from CRAN)
+- GNU Fortran (universal binary from the CRAN R tools page)
+
+**Install Homebrew dependencies**:
+
+```bash
+brew install conan cmake bison flex pkg-config automake autoconf create-dmg parallel ninja
+```
+
+**Code signing**: for local development, create a self-signed certificate (see the self-signing guide in the development docs). For distribution, use an official Apple Developer certificate.
+
+**Build**: open `jasp-desktop` in Qt Creator, configure with CMake, set `GITHUB_PAT`, and build.
+
+### Linux
+
+**Tools required**:
+
+- CMake > 3.21, GCC, gfortran
+- Qt 6.7 with Desktop kit, Qt Compatibility Module, Qt WebEngine, Qt WebChannel, Qt Positioning
+- Qt Creator 13
+- System packages (Ubuntu example):
+  ```bash
+  sudo apt install build-essential gfortran libboost-all-dev \
+    libjags-dev libsqlite3-dev libssl-dev libarchive-dev \
+    libjsoncpp-dev zlib1g-dev pkg-config
+  ```
+
+**Custom R path**: if R is not in the default location:
+
+```bash
+cmake -DCUSTOM_R_PATH=/path/to/R ...
+```
+
+**Local library install**: add `-DLINUX_LOCAL_BUILD=ON` to install module libraries locally instead of system-wide.
+
+**Dev Container**: a VS Code Dev Container configuration is available with all dependencies pre-installed. Install the Dev Containers extension, open the repo, and select "Reopen in Container". Set `GITHUB_PAT` as an environment variable before opening.
+
+:::
+
+## Building Modules
+
+After building JASP, build the default modules:
+
+```bash
+# From the jasp-desktop/Tools directory
+./buildAllDefaultJaspModules.sh
+# or for module bundles:
+./buildModuleBundlesLocally.sh
+```
+
+## Qt Installation Notes
+
+When downloading Qt from the [Qt open-source page](https://www.qt.io/download-open-source):
+
+- In the installer, select **Qt 6.7** (or newer), the **Desktop** target, and these additional components:
+  - Qt Compatibility Module
+  - Qt WebEngine
+  - Qt WebChannel
+  - Qt Positioning
+- Also install **Qt Creator 13** (or newer).

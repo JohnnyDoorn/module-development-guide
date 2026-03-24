@@ -1,0 +1,98 @@
+---
+title: "AI-Assisted Module Development"
+---
+
+AI coding agents can accelerate JASP module development by generating boilerplate, writing tests, and assisting with QML-to-R wiring. The JASP team maintains a set of agent instructions at:
+
+> <https://github.com/jasp-stats/jasp-agent-instructions>
+
+These instructions encode JASP-specific conventions so that AI tools produce code that follows project standards from the start.
+
+## Supported Platforms
+
+| Platform | Setup |
+|----------|-------|
+| **Claude Code** | Clone the instructions repo, Claude picks up `AGENTS.md` automatically |
+| **OpenAI Codex CLI** | Uses `codex.toml` for configuration |
+| **GitHub Copilot** | Reads `.instructions.md` files and the `AGENTS.md` conventions |
+
+All three platforms can use the same instruction set — the repo contains configuration files for each.
+
+## What the Agent Instructions Cover
+
+The instructions encode the conventions described throughout this guide:
+
+- **R function structure**: main function signature, `jaspResults`/`dataset`/`options` arguments, internal helpers with `.` prefix.
+- **QML control patterns**: `name`/`title`/`label` conventions, Form structure, property alignment.
+- **Error handling**: validate only at system boundaries (dataset, TextField, FormulaField), use `.hasErrors()`.
+- **Translation**: `gettext()`/`gettextf()` in R, `qsTr()` in QML, numbered arguments for reorderable strings.
+- **Dependencies and caching**: `$dependOn()`, `createJaspState()`, container inheritance.
+- **Table/plot lifecycle**: create → set dependencies → configure columns → add to container → fill with data.
+- **Option naming**: camelCase, singular nouns, abbreviations-as-words.
+- **Git workflow**: feature branches, never push directly to master.
+
+## Setting Up
+
+### Clone the Instructions
+
+```bash
+git clone https://github.com/jasp-stats/jasp-agent-instructions.git
+```
+
+### For Claude Code
+
+Place or symlink the instructions alongside your module code. Claude automatically reads `AGENTS.md` from the workspace root.
+
+### For Codex CLI
+
+The `codex.toml` file configures Codex. Place it in your project root or reference it with `--config`:
+
+```bash
+codex --config path/to/codex.toml
+```
+
+### For GitHub Copilot
+
+Copy the relevant `.instructions.md` files to your workspace's `.github/` directory, or configure Copilot to reference the instructions repository.
+
+## Agent Workflow for JASP Modules
+
+A typical AI-assisted development session:
+
+```{mermaid}
+flowchart TD
+    A[Describe analysis to agent] --> B[Agent generates R skeleton]
+    B --> C[Agent generates QML form]
+    C --> D[Agent generates Description.qml entry]
+    D --> E[Review & refine generated code]
+    E --> F[Agent generates unit tests]
+    F --> G[Run tests, fix failures]
+    G --> H[Agent adds translation wrappers]
+```
+
+### Tips
+
+- **Be specific**: describe the statistical method, expected inputs/outputs, and which QML controls to use.
+- **Review everything**: agents produce good scaffolding but may miss JASP-specific edge cases (e.g., encoding/decoding column names, `.hasErrors()` checks).
+- **Use tests as validation**: ask the agent to generate tests, then run them to verify the implementation.
+- **Iterative refinement**: start with the skeleton, test it in JASP, then ask the agent to add features incrementally.
+
+## R Session Handoff
+
+When working with coding agents, the agent cannot directly run R or start JASP. The workflow is:
+
+1. Agent writes/modifies R and QML files.
+2. You install the module (`R CMD INSTALL .`) and refresh in JASP.
+3. You report the results (errors, table output, plot appearance) back to the agent.
+4. Agent adjusts the code based on your feedback.
+
+For automated testing, the agent can run `jaspTools::testAll()` if `jaspTools` is configured in the R environment.
+
+## Migration Guide
+
+If you have an existing module and want to adopt agent-assisted development, the `MIGRATION.md` file in the instructions repo provides guidance on:
+
+- Retrofitting existing code to match conventions
+- Adding `info` properties to existing QML elements
+- Restructuring test files to the `jaspfiles/` layout
+- Adding missing translation wrappers

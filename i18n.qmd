@@ -1,0 +1,154 @@
+# Translating Your Module {#sec-i18n}
+
+JASP is used worldwide. Every user-visible string — in QML forms, R output, and C++ code — must be marked for translation so that volunteer translators can localise JASP via Weblate.
+
+## How Translation Works
+
+```{mermaid}
+flowchart LR
+    A[Developer marks strings] --> B[Weblate extracts marked strings]
+    B --> C[Translators provide translations]
+    C --> D[JASP displays translated text at runtime]
+```
+
+- **QML**: `qsTr("text")` → extracted by Qt's `lupdate` tool.
+- **R**: `gettext("text")` / `gettextf("text %s", var)` → extracted by R's translation tooling.
+- **C++**: `tr("text")` → extracted by Qt's `lupdate` tool.
+
+## QML Translation
+
+Wrap every user-visible string in `qsTr()`:
+
+```qml
+CheckBox { name: "meanDifference"; label: qsTr("Mean difference") }
+
+Group
+{
+    title: qsTr("Statistics")
+    CheckBox { name: "effectSize"; label: qsTr("Effect size") }
+}
+```
+
+### Parameters in QML
+
+Use `%1`, `%2`, etc. for substitutions:
+
+```qml
+text: qsTr("Group %1 vs Group %2").arg(group1Name).arg(group2Name)
+```
+
+## R Translation
+
+### gettext() — Simple Strings
+
+```r
+table$addColumnInfo(name = "estimate", title = gettext("Estimate"), type = "number")
+```
+
+### gettextf() — Strings with Parameters
+
+Use `sprintf`-style format specifiers:
+
+```r
+message <- gettextf("Variable '%s' has %d observations.", varName, nObs)
+```
+
+### Numbered Arguments
+
+When a string has multiple parameters, use numbered format specifiers (`%1$s`, `%2$d`) so translators can reorder them:
+
+```r
+# Good — translators can reorder
+gettextf("Compared %1$s with %2$s using %3$s.", group1, group2, method)
+
+# Bad — translators cannot reorder
+gettextf("Compared %s with %s using %s.", group1, group2, method)
+```
+
+### Plurals with ngettext()
+
+```r
+msg <- ngettext(nObs,
+  "Only 1 observation. At least 2 are required.",
+  "Only %d observations. At least 2 are required."
+)
+```
+
+### Unicode Characters
+
+Use `\uXXXX` escapes, never raw Unicode characters or `intToUtf8()`:
+
+```r
+# Good
+"\u2260"  # ≠
+
+# Bad
+"≠"              # fails on some locales
+intToUtf8(8800)  # not translatable
+```
+
+## Common Patterns
+
+### Converting paste() to gettextf()
+
+`paste()` concatenation cannot be translated because word order differs across languages. Always convert to `gettextf()`:
+```r
+# Bad — untranslatable
+message <- paste("Variable", varName, "has", nObs, "observations")
+
+# Good — translatable
+message <- gettextf("Variable '%1$s' has %2$d observations.", varName, nObs)
+```
+
+### Wrapping Expressions
+
+If you construct expressions for display:
+
+```r
+# Wrap the template, not the variable name
+title <- gettextf("P(%1$s | data)", hypothesis)
+```
+
+### Table Titles and Column Names
+
+Every `title` in `createJaspTable()` and `addColumnInfo()` must be wrapped:
+
+```r
+table <- createJaspTable(title = gettext("Descriptive Statistics"))
+table$addColumnInfo(name = "mean", title = gettext("Mean"),   type = "number")
+table$addColumnInfo(name = "sd",   title = gettext("SD"),     type = "number")
+table$addColumnInfo(name = "n",    title = gettext("N"),      type = "integer")
+```
+
+### Footnotes and Error Messages
+
+```r
+table$addFootnote(message = gettext("Levene's test is significant (p < .05)."))
+table$setError(gettext("The dependent variable contains only missing values."))
+```
+
+## What NOT to Translate
+
+- Option names (`name:` in QML, keys in `options[[...]]` in R)
+- Column/row name keys (the `name` parameter in `addColumnInfo`)
+- Internal log messages
+- Code comments
+- Variable names used in computation
+
+## C++ Translation
+
+Use `tr()` inside QObject-derived classes:
+
+```cpp
+QString message = tr("Analysis complete");
+```
+
+For non-QObject code, use `QCoreApplication::translate()`.
+
+## Quick Reference
+
+| Language | Simple string | With parameters | Plural |
+|----------|--------------|-----------------|--------|
+| QML | `qsTr("text")` | `qsTr("x %1").arg(v)` | — |
+| R | `gettext("text")` | `gettextf("x %s", v)` | `ngettext(n, "one", "many")` |
+| C++ | `tr("text")` | `tr("x %1").arg(v)` | — |

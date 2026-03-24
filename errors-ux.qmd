@@ -1,0 +1,141 @@
+---
+title: "Error Messages & User Experience"
+---
+
+JASP targets researchers and students who may have limited statistical or programming experience. Every analysis should guide users towards correct interpretation and fail gracefully when something goes wrong.
+
+## Design Philosophy
+
+Three principles from the JASP Human Guide:
+
+1. **Be proactive, not reactive** — check assumptions and warn before producing misleading results.
+2. **Write for humans** — error messages should explain what went wrong and suggest a fix, not dump a stack trace.
+3. **Be consistent** — use the standardised error messages below so users learn to recognise common patterns.
+
+## Types of Messages
+
+| Type | Where it appears | Purpose |
+|------|-----------------|---------|
+| **Analysis error** | Red banner above results | Unrecoverable problem — analysis cannot produce output |
+| **Footnote** | Below a table | Warning or caveat about specific results |
+| **Value error** | Inline in a table cell | A specific cell could not be computed |
+
+### Setting an Analysis Error
+
+```r
+table <- createJaspTable(title = "Results")
+table$setError("The dependent variable contains only missing values.")
+```
+
+The error is attached to a specific output element (table, plot, or container). If attached to a container, all child elements inherit the error state.
+
+### Adding Footnotes
+
+```r
+table$addFootnote(
+  message = gettext("Levene's test is significant (p < .05), suggesting a violation of the equal variances assumption."),
+  colNames = "p",
+  rowNames = "levene"
+)
+```
+
+### .hasErrors() — Validate Before Computing
+
+Call `.hasErrors()` on your dataset to check common problems **before** attempting computation:
+
+```r
+.hasErrors(dataset,
+  type = c("infinity", "observations", "variance"),
+  observations.amount = "< 2",
+  exitAnalysisIfErrors = TRUE
+)
+```
+
+Available check types:
+
+| Type | What it checks |
+|------|---------------|
+| `infinity` | Infinite values in the data |
+| `observations` | Too few observations (specify `observations.amount`) |
+| `variance` | Zero variance in a variable |
+| `factorLevels` | Too few factor levels (specify `factorLevels.amount`) |
+| `negativeValues` | Negative values where not expected |
+| `integerValues` | Non-integer values where integers are required |
+| `duplicateValues` | Duplicate values in a variable |
+
+When `exitAnalysisIfErrors = TRUE`, the error is set automatically and the analysis stops cleanly.
+
+## Standardised Error Messages
+
+Use these exact phrasings when the situation matches. This ensures consistency across all JASP modules and simplifies translation.
+
+### Not Enough Observations
+
+> "Not enough observations. The analysis requires at least *N* observations."
+
+### Not Enough Factor Levels
+
+> "The factor '*variable*' has fewer than 2 levels after removing empty levels."
+
+### Zero Variance
+
+> "The variable '*variable*' has zero variance. The analysis cannot proceed."
+
+### Infinite Values
+
+> "The variable '*variable*' contains infinite values."
+
+### Singular Matrix / Convergence Failures
+
+> "The model could not be estimated. The design matrix is (near-)singular."
+
+> "The model did not converge within *N* iterations."
+
+### Bayesian-Specific
+
+> "The Bayes factor could not be computed. This may be due to a singular design matrix."
+
+> "The posterior samples could not be obtained. Consider increasing the number of MCMC samples."
+
+See @sec-appendix-errors for the full error message catalogue organized by analysis type.
+
+## Assumption Checking
+
+JASP analyses should check assumptions and report violations as footnotes:
+
+```r
+if (leveneResult$p < 0.05) {
+  table$addFootnote(
+    message = gettext("Levene's test is significant (p < .05), suggesting a violation of the equal variances assumption.")
+  )
+}
+```
+
+### Where to Validate
+
+Validate at system boundaries only:
+
+| Boundary | Action |
+|----------|--------|
+| Dataset columns | Use `.hasErrors()` checks |
+| User text input (TextField, FormulaField) | Validate in QML via `inputType` or in R |
+| Numeric input (IntegerField, DoubleField) | Use QML `min`/`max` properties |
+| QML dropdowns / checkboxes | No validation needed — values are constrained by the UI |
+
+Do **not** add defensive checks for values that cannot occur because the UI prevents them. Trust [QML input constraints](qml-interface.qmd#sec-qml-input-components).
+
+## Writing Good Error Messages
+
+::: {.callout-tip}
+### Checklist
+
+- [ ] Is the message a complete sentence?
+- [ ] Does it say **what** went wrong?
+- [ ] Does it suggest **what the user can do**?
+- [ ] Is it wrapped in `gettext()` or `gettextf()` for translation?
+- [ ] Does it avoid R jargon (e.g., "NULL", "NA", "vector")?
+:::
+
+**Good**: `gettextf("The grouping variable '%s' has fewer than 2 levels. Ensure both groups are present in the data.", groupVar)`
+
+**Bad**: `"Error in grouping variable"` — says nothing about the cause or remedy.

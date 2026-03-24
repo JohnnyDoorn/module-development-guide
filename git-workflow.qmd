@@ -1,0 +1,127 @@
+---
+title: "Git Workflow"
+---
+
+JASP uses a fork-based Git workflow. Every contributor works on their own fork, then submits pull requests to the upstream `jasp-stats/` repositories.
+
+## Setup
+
+```bash
+# 1. Fork the module repo on GitHub (via the web UI)
+
+# 2. Clone your fork
+git clone https://github.com/YOUR-USERNAME/jaspModuleName.git
+cd jaspModuleName
+
+# 3. Add the upstream remote
+git remote add upstream https://github.com/jasp-stats/jaspModuleName.git
+```
+
+Verify remotes:
+
+```bash
+git remote -v
+# origin    https://github.com/YOUR-USERNAME/jaspModuleName.git (fetch/push)
+# upstream  https://github.com/jasp-stats/jaspModuleName.git (fetch/push)
+```
+
+## Daily Workflow
+
+### Feature Branches
+
+Always work on a feature branch, never directly on `master`:
+
+```bash
+git checkout master
+git pull upstream master
+git checkout -b feature/my-new-analysis
+```
+
+### Commit Often, Push Regularly
+
+```bash
+git add -A
+git commit -m "Add initial t-test implementation"
+git push origin feature/my-new-analysis
+```
+
+Push to your fork frequently — it serves as a backup.
+
+### Stay Up to Date with Upstream
+
+Rebase (not merge) to keep a clean history:
+
+```bash
+git stash                          # save uncommitted work
+git fetch upstream                 # get latest changes
+git rebase upstream/master         # replay your commits on top
+git push origin feature/my-new-analysis   # update your fork
+git stash pop                      # restore uncommitted work
+```
+
+::: {.callout-warning}
+### After Rebasing with an Open PR
+If you have an open pull request and you rebased, you must force-push:
+
+```bash
+git push --force origin feature/my-new-analysis
+```
+
+**Never** run `git pull` after a rebase — that re-introduces the old commits as duplicates.
+:::
+
+## Pull Requests
+
+1. Push your feature branch to your fork.
+2. On GitHub, open a pull request from `your-fork:feature-branch` → `jasp-stats:master`.
+3. Assign a reviewer (module maintainer — see the maintainer table in the JASP contributing guide).
+4. Address CI failures and review comments.
+5. Once approved, the maintainer merges.
+
+### PR Tips
+
+- Keep PRs focused — one feature or fix per PR.
+- Write a clear description of what changed and why.
+- If CI fails, check the GitHub Actions logs (see @sec-ci).
+
+## Squashing Commits
+
+Before opening a PR, you may want to squash work-in-progress commits into a clean set:
+
+```bash
+# Squash last 5 commits into one
+git reset --soft HEAD~5
+git commit -m "Implement independent samples t-test"
+git push --force origin feature/my-new-analysis
+```
+
+## Resolving Conflicts
+
+When rebasing produces conflicts:
+
+1. Git pauses and marks conflicting files.
+2. Open each file, find the `<<<<<<<` markers, and resolve manually.
+3. Stage the resolved files:
+   ```bash
+   git add path/to/resolved-file.R
+   ```
+4. Continue the rebase:
+   ```bash
+   git rebase --continue
+   ```
+5. Push the result:
+   ```bash
+   git push --force origin feature/my-new-analysis
+   ```
+
+## Branch Naming
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| New feature | `feature/description` | `feature/bayesian-ttest` |
+| Bug fix | `fix/description` | `fix/ttest-variance-check` |
+| Docs | `docs/description` | `docs/update-help-files` |
+
+## Module Maintainers
+
+Each module under `jasp-stats/` has an assigned maintainer who reviews PRs. Check the module's `DESCRIPTION` file or the JASP contributing guide for the current maintainer.

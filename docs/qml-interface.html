@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.340">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>JASP Module Development Guide - 4&nbsp; Designing the QML Interface</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./r-backend.html" rel="next">
+<link href="./anatomy.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="custom.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./anatomy.html">Building Your Module</a></li><li class="breadcrumb-item"><a href="./qml-interface.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Designing the QML Interface</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">JASP Module Development Guide</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/jasp-stats/jasp-desktop" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Welcome &amp; Overview</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Setting Up Your Environment</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Building Your Module</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Module Anatomy</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./qml-interface.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Designing the QML Interface</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./r-backend.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Writing the R Backend</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./qml-r-connection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Connecting QML to R</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./jasptools-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Running &amp; Debugging with jaspTools</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false">
+ <span class="menu-text">Improving Your Module</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./coding-standards.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Coding Standards</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./errors-ux.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Error Messages &amp; User Experience</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Testing Your Module</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debugging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Debugging &amp; Logging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./i18n.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Translating Your Module</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./upgrades.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Backward Compatibility (Upgrades.qml)</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="false">
+ <span class="menu-text">Finalizing Your Module</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./versioning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Versioning &amp; Releases</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./publishing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Publishing Your Module</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Git Workflow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./licensing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Licensing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./building-jasp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Building JASP from Source</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ai-assisted.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">AI-Assisted Module Development</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="false">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-skeleton.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Analysis Skeleton (R Template)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-qml-style.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">QML Style Example</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-option-names.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Standardised Option Names Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Error Message Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-resources.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">Learning Resources</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-qml-input-components" id="toc-sec-qml-input-components" class="nav-link active" data-scroll-target="#sec-qml-input-components"><span class="header-section-number">4.1</span> General input components</a>
+  <ul class="collapse">
+  <li><a href="#checkbox" id="toc-checkbox" class="nav-link" data-scroll-target="#checkbox"><span class="header-section-number">4.1.1</span> CheckBox</a></li>
+  <li><a href="#radiobuttongroup-radiobutton" id="toc-radiobuttongroup-radiobutton" class="nav-link" data-scroll-target="#radiobuttongroup-radiobutton"><span class="header-section-number">4.1.2</span> RadioButtonGroup / RadioButton</a></li>
+  <li><a href="#dropdown" id="toc-dropdown" class="nav-link" data-scroll-target="#dropdown"><span class="header-section-number">4.1.3</span> DropDown</a></li>
+  <li><a href="#numeric-fields" id="toc-numeric-fields" class="nav-link" data-scroll-target="#numeric-fields"><span class="header-section-number">4.1.4</span> Numeric fields</a></li>
+  <li><a href="#textfield-and-formulafield" id="toc-textfield-and-formulafield" class="nav-link" data-scroll-target="#textfield-and-formulafield"><span class="header-section-number">4.1.5</span> TextField and FormulaField</a></li>
+  <li><a href="#textarea" id="toc-textarea" class="nav-link" data-scroll-target="#textarea"><span class="header-section-number">4.1.6</span> TextArea</a></li>
+  </ul></li>
+  <li><a href="#variable-specification-components" id="toc-variable-specification-components" class="nav-link" data-scroll-target="#variable-specification-components"><span class="header-section-number">4.2</span> Variable specification components</a>
+  <ul class="collapse">
+  <li><a href="#availablevariableslist-assignedvariableslist" id="toc-availablevariableslist-assignedvariableslist" class="nav-link" data-scroll-target="#availablevariableslist-assignedvariableslist"><span class="header-section-number">4.2.1</span> AvailableVariablesList / AssignedVariablesList</a></li>
+  <li><a href="#factorlevellist" id="toc-factorlevellist" class="nav-link" data-scroll-target="#factorlevellist"><span class="header-section-number">4.2.2</span> FactorLevelList</a></li>
+  </ul></li>
+  <li><a href="#complex-components" id="toc-complex-components" class="nav-link" data-scroll-target="#complex-components"><span class="header-section-number">4.3</span> Complex components</a>
+  <ul class="collapse">
+  <li><a href="#componentslist" id="toc-componentslist" class="nav-link" data-scroll-target="#componentslist"><span class="header-section-number">4.3.1</span> ComponentsList</a></li>
+  <li><a href="#tabview" id="toc-tabview" class="nav-link" data-scroll-target="#tabview"><span class="header-section-number">4.3.2</span> TabView</a></li>
+  <li><a href="#inputlistview-tableview" id="toc-inputlistview-tableview" class="nav-link" data-scroll-target="#inputlistview-tableview"><span class="header-section-number">4.3.3</span> InputListView / TableView</a></li>
+  </ul></li>
+  <li><a href="#grouping-components" id="toc-grouping-components" class="nav-link" data-scroll-target="#grouping-components"><span class="header-section-number">4.4</span> Grouping components</a>
+  <ul class="collapse">
+  <li><a href="#group" id="toc-group" class="nav-link" data-scroll-target="#group"><span class="header-section-number">4.4.1</span> Group</a></li>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section"><span class="header-section-number">4.4.2</span> Section</a></li>
+  </ul></li>
+  <li><a href="#layout" id="toc-layout" class="nav-link" data-scroll-target="#layout"><span class="header-section-number">4.5</span> Layout</a></li>
+  <li><a href="#sec-info-property" id="toc-sec-info-property" class="nav-link" data-scroll-target="#sec-info-property"><span class="header-section-number">4.6</span> The <code>info</code> property</a></li>
+  <li><a href="#complete-example" id="toc-complete-example" class="nav-link" data-scroll-target="#complete-example"><span class="header-section-number">4.7</span> Complete example</a></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jasp-stats/jasp-desktop/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec-qml" class="quarto-section-identifier"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Designing the QML Interface</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>QML (Qt Modeling Language) defines the analysis options panel that users interact with. JASP provides standardised components (checkboxes, dropdowns, variable lists, etc.) that generate a uniform look and automatically communicate user choices to R.</p>
+<p>Key QML paradigms:</p>
+<ul>
+<li><strong>Containment</strong> — components can be nested; properties of inner components are hidden from outer ones</li>
+<li><strong>Property binding</strong> — when a property is set via a JavaScript expression referencing another component, it updates automatically when that component changes</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>CheckBox { <span class="dt">id</span><span class="op">:</span> showCi<span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Confidence interval"</span>) }</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>CIField  { <span class="dt">name</span><span class="op">:</span> <span class="st">"ciLevel"</span><span class="op">;</span> <span class="dt">enabled</span><span class="op">:</span> showCi<span class="op">.</span><span class="at">checked</span> }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Wrap <strong>all</strong> user-visible text in <code>qsTr()</code> for translation support. Use <code>\uXXXX</code> for non-Latin characters.</p>
+</div>
+</div>
+<p>Follow the <a href="./appendix-qml-style.html">QML style guide</a> for formatting conventions.</p>
+<section id="sec-qml-input-components" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="sec-qml-input-components"><span class="header-section-number">4.1</span> General input components</h2>
+<section id="checkbox" class="level3" data-number="4.1.1">
+<h3 data-number="4.1.1" class="anchored" data-anchor-id="checkbox"><span class="header-section-number">4.1.1</span> CheckBox</h3>
+<p>Toggle on/off. Nested components are automatically enabled/disabled.</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>—</td>
+<td>Identifier used in R</td>
+</tr>
+<tr class="even">
+<td><code>label</code></td>
+<td>—</td>
+<td>User-visible text</td>
+</tr>
+<tr class="odd">
+<td><code>checked</code></td>
+<td><code>false</code></td>
+<td>Default state</td>
+</tr>
+<tr class="even">
+<td><code>childrenOnSameRow</code></td>
+<td><code>false</code></td>
+<td>Place children horizontally</td>
+</tr>
+<tr class="odd">
+<td><code>columns</code></td>
+<td><code>1</code></td>
+<td>Columns for nested components</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb2"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>CheckBox</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>    <span class="st">"homogeneityCorrections"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span>   <span class="fu">qsTr</span>(<span class="st">"Homogeneity corrections"</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">columns</span><span class="op">:</span> <span class="dv">3</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"homogeneityNone"</span><span class="op">;</span>  <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"None"</span>)<span class="op">;</span>           <span class="dt">checked</span><span class="op">:</span> <span class="kw">true</span> }</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"homogeneityBrown"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Brown-Forsythe"</span>)<span class="op">;</span> <span class="dt">checked</span><span class="op">:</span> <span class="kw">true</span> }</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"homogeneityWelch"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Welch"</span>)<span class="op">;</span>          <span class="dt">checked</span><span class="op">:</span> <span class="kw">true</span> }</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/CheckBox_example_2.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Nested checkboxes</figcaption>
+</figure>
+</div>
+</section>
+<section id="radiobuttongroup-radiobutton" class="level3" data-number="4.1.2">
+<h3 data-number="4.1.2" class="anchored" data-anchor-id="radiobuttongroup-radiobutton"><span class="header-section-number">4.1.2</span> RadioButtonGroup / RadioButton</h3>
+<p>Only one RadioButton per group can be selected. The group’s <code>name</code> is sent to R with the <code>value</code> of the selected button.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>RadioButtonGroup</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>  <span class="st">"alternative"</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">title</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Alternative Hypothesis"</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    RadioButton { <span class="dt">value</span><span class="op">:</span> <span class="st">"twoSided"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"≠ Test value"</span>)<span class="op">;</span> <span class="dt">checked</span><span class="op">:</span> <span class="kw">true</span> }</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    RadioButton { <span class="dt">value</span><span class="op">:</span> <span class="st">"greater"</span><span class="op">;</span>  <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"&gt; Test value"</span>) }</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    RadioButton { <span class="dt">value</span><span class="op">:</span> <span class="st">"less"</span><span class="op">;</span>     <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"&lt; Test value"</span>) }</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/RadioButton_example_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Radio buttons</figcaption>
+</figure>
+</div>
+</section>
+<section id="dropdown" class="level3" data-number="4.1.3">
+<h3 data-number="4.1.3" class="anchored" data-anchor-id="dropdown"><span class="header-section-number">4.1.3</span> DropDown</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>DropDown</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>   <span class="st">"method"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span>  <span class="fu">qsTr</span>(<span class="st">"Method"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">values</span><span class="op">:</span> [</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        { <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Pearson"</span>)<span class="op">,</span>  <span class="dt">value</span><span class="op">:</span> <span class="st">"pearson"</span>  }<span class="op">,</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        { <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Spearman"</span>)<span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="st">"spearman"</span> }</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Key properties: <code>source</code> (populate from a variable list), <code>addEmptyValue</code>, <code>startValue</code>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/DropDown_example_2.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Dropdown</figcaption>
+</figure>
+</div>
+</section>
+<section id="numeric-fields" class="level3" data-number="4.1.4">
+<h3 data-number="4.1.4" class="anchored" data-anchor-id="numeric-fields"><span class="header-section-number">4.1.4</span> Numeric fields</h3>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Purpose</th>
+<th>Key defaults</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>DoubleField</code></td>
+<td>Decimal input</td>
+<td><code>min: 0</code>, <code>decimals: 3</code></td>
+</tr>
+<tr class="even">
+<td><code>IntegerField</code></td>
+<td>Integer input</td>
+<td><code>min: 0</code></td>
+</tr>
+<tr class="odd">
+<td><code>PercentField</code></td>
+<td>Percentage</td>
+<td><code>defaultValue: 50</code></td>
+</tr>
+<tr class="even">
+<td><code>CIField</code></td>
+<td>Confidence interval %</td>
+<td><code>defaultValue: 95</code></td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb5"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>DoubleField  { <span class="dt">name</span><span class="op">:</span> <span class="st">"priorWidth"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Prior width"</span>)<span class="op">;</span> <span class="dt">defaultValue</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">;</span> <span class="dt">max</span><span class="op">:</span> <span class="dv">2</span> }</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>IntegerField { <span class="dt">name</span><span class="op">:</span> <span class="st">"nSamples"</span><span class="op">;</span>   <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Samples"</span>)<span class="op">;</span>     <span class="dt">defaultValue</span><span class="op">:</span> <span class="dv">10000</span> }</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>CIField      { <span class="dt">name</span><span class="op">:</span> <span class="st">"ciLevel"</span><span class="op">;</span>    <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Confidence interval"</span>) }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="textfield-and-formulafield" class="level3" data-number="4.1.5">
+<h3 data-number="4.1.5" class="anchored" data-anchor-id="textfield-and-formulafield"><span class="header-section-number">4.1.5</span> TextField and FormulaField</h3>
+<p><code>TextField</code> accepts arbitrary text. <code>FormulaField</code> accepts R expressions that evaluate to numbers (e.g., <code>1/3</code>, <code>pi</code>, <code>sin(30)</code>).</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>TextField    { <span class="dt">name</span><span class="op">:</span> <span class="st">"labelY"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Y-axis label"</span>)<span class="op">;</span> <span class="dt">fieldWidth</span><span class="op">:</span> <span class="dv">200</span> }</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>FormulaField { <span class="dt">name</span><span class="op">:</span> <span class="st">"prior"</span><span class="op">;</span>  <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Prior"</span>)<span class="op">;</span>        <span class="dt">defaultValue</span><span class="op">:</span> <span class="st">"1/3"</span> }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="textarea" class="level3" data-number="4.1.6">
+<h3 data-number="4.1.6" class="anchored" data-anchor-id="textarea"><span class="header-section-number">4.1.6</span> TextArea</h3>
+<p>Multi-line input; press Ctrl+Enter to apply. Set <code>textType</code> for syntax highlighting:</p>
+<ul>
+<li><code>JASP.TextTypeLavaan</code> — lavaan syntax</li>
+<li><code>JASP.TextTypeRcode</code> — R code</li>
+<li><code>JASP.TextTypeJAGS</code> — JAGS model</li>
+</ul>
+</section>
+</section>
+<section id="variable-specification-components" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="variable-specification-components"><span class="header-section-number">4.2</span> Variable specification components</h2>
+<section id="availablevariableslist-assignedvariableslist" class="level3" data-number="4.2.1">
+<h3 data-number="4.2.1" class="anchored" data-anchor-id="availablevariableslist-assignedvariableslist"><span class="header-section-number">4.2.1</span> AvailableVariablesList / AssignedVariablesList</h3>
+<p>The core drag-and-drop mechanism. Wrap in a <code>VariablesForm</code>:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>VariablesForm</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    AvailableVariablesList { <span class="dt">name</span><span class="op">:</span> <span class="st">"allVariables"</span> }</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    AssignedVariablesList</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">name</span><span class="op">:</span>           <span class="st">"dependent"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">label</span><span class="op">:</span>          <span class="fu">qsTr</span>(<span class="st">"Dependent Variable"</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">singleVariable</span><span class="op">:</span> <span class="kw">true</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        <span class="dt">allowedColumns</span><span class="op">:</span> [<span class="st">"scale"</span>]</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    AssignedVariablesList</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        <span class="dt">name</span><span class="op">:</span>           <span class="st">"fixedFactors"</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="dt">label</span><span class="op">:</span>          <span class="fu">qsTr</span>(<span class="st">"Fixed Factors"</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">allowedColumns</span><span class="op">:</span> [<span class="st">"nominal"</span><span class="op">,</span> <span class="st">"ordinal"</span>]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/AssignedVariablesList_example_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Variable assignment</figcaption>
+</figure>
+</div>
+<p>Key <code>AssignedVariablesList</code> properties:</p>
+<table class="table">
+<colgroup>
+<col style="width: 43%">
+<col style="width: 56%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>singleVariable</code></td>
+<td>Only one variable allowed</td>
+</tr>
+<tr class="even">
+<td><code>allowedColumns</code></td>
+<td>Restrict to <code>["scale"]</code>, <code>["nominal", "ordinal"]</code>, etc.</td>
+</tr>
+<tr class="odd">
+<td><code>listViewType</code></td>
+<td><code>JASP.Interaction</code> for model terms, <code>JASP.Layers</code> for layers</td>
+</tr>
+<tr class="even">
+<td><code>rowComponent</code></td>
+<td>Add per-variable controls (checkboxes, dropdowns)</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb8"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>AssignedVariablesList</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>         <span class="st">"modelTerms"</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span>        <span class="fu">qsTr</span>(<span class="st">"Model Terms"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">listViewType</span><span class="op">:</span> <span class="ex">JASP</span><span class="op">.</span><span class="at">Interaction</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rowComponent</span><span class="op">:</span> CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"isNuisance"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Nuisance"</span>) }</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/AssignedVariablesList_example_2.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Interaction model terms</figcaption>
+</figure>
+</div>
+</section>
+<section id="factorlevellist" class="level3" data-number="4.2.2">
+<h3 data-number="4.2.2" class="anchored" data-anchor-id="factorlevellist"><span class="header-section-number">4.2.2</span> FactorLevelList</h3>
+<p>For defining factor names and their levels (e.g., Repeated Measures ANOVA):</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>FactorLevelList</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>       <span class="st">"repeatedMeasuresFactors"</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span>      <span class="fu">qsTr</span>(<span class="st">"Repeated Measures Factors"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">factorName</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"RM Factor"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">minLevels</span><span class="op">:</span>  <span class="dv">2</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/RepeatedMeasuresFactorsList_example_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Factor level specification</figcaption>
+</figure>
+</div>
+</section>
+</section>
+<section id="complex-components" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="complex-components"><span class="header-section-number">4.3</span> Complex components</h2>
+<section id="componentslist" class="level3" data-number="4.3.1">
+<h3 data-number="4.3.1" class="anchored" data-anchor-id="componentslist"><span class="header-section-number">4.3.1</span> ComponentsList</h3>
+<p>Dynamically add/remove sets of options (e.g., multiple models):</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>ComponentsList</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>       <span class="st">"models"</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span>      <span class="fu">qsTr</span>(<span class="st">"Models"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rowComponent</span><span class="op">:</span> Group</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        TextField { <span class="dt">name</span><span class="op">:</span> <span class="st">"modelName"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Name"</span>) }</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        TextArea  { <span class="dt">name</span><span class="op">:</span> <span class="st">"syntax"</span><span class="op">;</span>    <span class="dt">textType</span><span class="op">:</span> <span class="ex">JASP</span><span class="op">.</span><span class="at">TextTypeLavaan</span> }</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="tabview" class="level3" data-number="4.3.2">
+<h3 data-number="4.3.2" class="anchored" data-anchor-id="tabview"><span class="header-section-number">4.3.2</span> TabView</h3>
+<p>Multiple tabs, each containing the same set of controls:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>TabView</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>        <span class="st">"models"</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">maximumItems</span><span class="op">:</span> <span class="dv">9</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">newItemName</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Model 1"</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">content</span><span class="op">:</span> TextArea { <span class="dt">name</span><span class="op">:</span> <span class="st">"syntax"</span><span class="op">;</span> <span class="dt">textType</span><span class="op">:</span> <span class="ex">JASP</span><span class="op">.</span><span class="at">TextTypeLavaan</span> }</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="inputlistview-tableview" class="level3" data-number="4.3.3">
+<h3 data-number="4.3.3" class="anchored" data-anchor-id="inputlistview-tableview"><span class="header-section-number">4.3.3</span> InputListView / TableView</h3>
+<p><code>InputListView</code> — list of user-specified items with per-item controls. <code>TableView</code> — spreadsheet-like grid input.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/InputListView_Example.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">InputListView</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/TableView_Example.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">TableView</figcaption>
+</figure>
+</div>
+</section>
+</section>
+<section id="grouping-components" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="grouping-components"><span class="header-section-number">4.4</span> Grouping components</h2>
+<section id="group" class="level3" data-number="4.4.1">
+<h3 data-number="4.4.1" class="anchored" data-anchor-id="group"><span class="header-section-number">4.4.1</span> Group</h3>
+<p>Visually groups controls with an optional title:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>Group</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">title</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Additional Options"</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"meanDifference"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Mean difference"</span>) }</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"effectSize"</span><span class="op">;</span>     <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Effect size"</span>) }</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/Group_example_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Group example</figcaption>
+</figure>
+</div>
+</section>
+<section id="section" class="level3" data-number="4.4.2">
+<h3 data-number="4.4.2" class="anchored" data-anchor-id="section"><span class="header-section-number">4.4.2</span> Section</h3>
+<p>A collapsible section (accordion):</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>Section</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">title</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Assumption Checks"</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"normalityTest"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Normality test"</span>) }</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"equalityOfVariances"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Equality of variances"</span>) }</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/ExpanderButton_example_1.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Collapsible section</figcaption>
+</figure>
+</div>
+</section>
+</section>
+<section id="layout" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="layout"><span class="header-section-number">4.5</span> Layout</h2>
+<p>Use <code>Layout.columnSpan</code> and <code>Layout.rowSpan</code> to control how components fill the grid:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>VariablesForm</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    AvailableVariablesList { <span class="dt">name</span><span class="op">:</span> <span class="st">"allVars"</span> }</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    AssignedVariablesList  { <span class="dt">name</span><span class="op">:</span> <span class="st">"vars"</span><span class="op">;</span> <span class="ex">Layout</span><span class="op">.</span><span class="at">columnSpan</span><span class="op">:</span> <span class="dv">2</span> }</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-info-property" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="sec-info-property"><span class="header-section-number">4.6</span> The <code>info</code> property</h2>
+<p>Every component accepts an <code>info</code> property used to auto-generate help documentation:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>CheckBox</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">name</span><span class="op">:</span>  <span class="st">"descriptives"</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Descriptives"</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">info</span><span class="op">:</span>  <span class="fu">qsTr</span>(<span class="st">"When checked, displays a table of descriptive statistics."</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Wrap <code>info</code> text in <code>qsTr()</code> to make help translatable.</p>
+</section>
+<section id="complete-example" class="level2" data-number="4.7">
+<h2 data-number="4.7" class="anchored" data-anchor-id="complete-example"><span class="header-section-number">4.7</span> Complete example</h2>
+<div class="sourceCode" id="cb16"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span><span class="im"> QtQuick</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span><span class="im"> JASP</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span><span class="im"> JASP.Controls</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>Form</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    VariablesForm</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>        AvailableVariablesList { <span class="dt">name</span><span class="op">:</span> <span class="st">"allVariablesList"</span> }</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>        AssignedVariablesList  { <span class="dt">name</span><span class="op">:</span> <span class="st">"variables"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Variables"</span>)<span class="op">;</span> <span class="dt">allowedColumns</span><span class="op">:</span> [<span class="st">"scale"</span>] }</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>        AssignedVariablesList  { <span class="dt">name</span><span class="op">:</span> <span class="st">"groupingVariable"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Grouping Variable"</span>)<span class="op">;</span> <span class="dt">singleVariable</span><span class="op">:</span> <span class="kw">true</span><span class="op">;</span> <span class="dt">allowedColumns</span><span class="op">:</span> [<span class="st">"nominal"</span>] }</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    Section</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>        <span class="dt">title</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Additional Statistics"</span>)</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>        Group</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>            <span class="dt">title</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Location"</span>)</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>            CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"meanDifference"</span><span class="op">;</span>           <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Mean difference"</span>) }</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>            CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"meanDiffConfidenceInterval"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Confidence interval"</span>)<span class="op">;</span> <span class="dt">childrenOnSameRow</span><span class="op">:</span> <span class="kw">true</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>                CIField  { <span class="dt">name</span><span class="op">:</span> <span class="st">"meanDiffCiLevel"</span> }</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>            CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"effectSize"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Effect size"</span>) }</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>    Section</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>        <span class="dt">title</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Assumption Checks"</span>)</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>        CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"normalityTest"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Normality"</span>) }</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>        CheckBox { <span class="dt">name</span><span class="op">:</span> <span class="st">"equalityOfVariancesTest"</span><span class="op">;</span> <span class="dt">label</span><span class="op">:</span> <span class="fu">qsTr</span>(<span class="st">"Equality of variances"</span>) }</span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/qml-guide/general_example.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Complete form example</figcaption>
+</figure>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./anatomy.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Module Anatomy</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./r-backend.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Writing the R Backend</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

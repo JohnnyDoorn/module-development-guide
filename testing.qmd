@@ -1,0 +1,247 @@
+---
+title: "Testing Your Module"
+---
+
+Every JASP module must have unit tests. Tests catch regressions, verify tables and plots produce expected output, and run automatically in CI on every push.
+
+## Framework
+
+JASP uses `testthat` through the `jaspTools` package, which wraps `testthat` with JASP-specific helpers for running analyses, comparing tables, and validating plots.
+
+### Setup
+
+```r
+# Install jaspTools (one-time)
+remotes::install_github("jasp-stats/jaspTools")
+library(jaspTools)
+```
+
+For interactive debugging of analyses with `jaspTools` (including `browser()`), see @sec-jasptools-workflow.
+
+## Test File Structure
+
+```
+tests/
+├── testthat.R                    # Runner script
+└── testthat/
+    ├── test-analysisname.R       # One file per analysis
+    ├── _snaps/                   # Auto-generated plot snapshots
+    │   └── test-analysisname/
+    │       └── plot-name.svg
+    └── jaspfiles/                # Test data (recommended)
+        ├── library/              # Datasets from the JASP data library
+        ├── verified/             # Verified .jasp example files
+        └── other/                # Additional test data
+```
+
+Test files follow the pattern: `test-{source}-{filename}.R`, where `{source}` indicates the data origin (e.g., `test-verified-ttest.R`, `test-library-BinomialTest.R`).
+
+## Recommended: Generate Tests from Example Files {#sec-example-tests}
+
+The preferred way to create tests is to **auto-generate them from `.jasp` example files**. This approach:
+
+- Ensures your examples are always tested
+- Produces consistent, comprehensive test coverage with minimal effort
+- Keeps tests in sync with the actual user-facing examples
+
+### Step 1: Add .jasp Files
+
+Place your example `.jasp` files in the appropriate subfolder:
+
+| Folder | Contents |
+|--------|----------|
+| `tests/testthat/jaspfiles/verified/` | Files from the JASP verification project |
+| `tests/testthat/jaspfiles/library/` | Files from the JASP data library |
+| `tests/testthat/jaspfiles/other/` | Other example files for testing |
+
+### Step 2: Generate Tests
+
+```r
+library(jaspTools)
+jaspTools::makeTestsFromExamples("jaspTTests")
+```
+
+This reads each `.jasp` example, extracts the options, runs the analysis, and generates test code. Generated test files are named `test-{source}-{filename}.R`.
+
+### Step 3: Review
+
+Always eyeball the generated tests. There are edge cases where `makeTestsFromExamples()` fails due to complex variable encoding (e.g., some SEM syntax, ordinal constraints). Add `skip()` for those cases:
+
+```r
+test_that("Complex SEM model runs", {
+  skip("Complex variable encoding not yet supported by makeTestsFromExamples")
+  # ...
+})
+```
+
+### Step 4: Keep in Sync
+
+When you update an example `.jasp` file, regenerate the corresponding test. The `verified/` folder is protected from accidental overwrites by default.
+
+::: {.callout-important}
+### Migrate Existing Tests
+If your module still has the old `examples/` folder layout, move your `.jasp` files into `tests/testthat/jaspfiles/`, delete the old auto-generated test files, and re-run `makeTestsFromExamples()`. Make sure you have the latest `jaspTools` installed.
+:::
+
+## Writing Tests Manually
+
+For cases not covered by example files — edge cases, specific error conditions, or fine-grained option combinations — write tests manually.
+
+### Basic Structure
+
+```r
+test_that("Independent Samples T-Test produces correct table", {
+  options <- analysisOptions("TTestIndependentSamples")
+  options$dependent  <- "contNormal"
+  options$groupingVariable <- "facGender"
+  options$effectSize <- TRUE
+
+  results <- runAnalysis("TTestIndependentSamples", "test.csv", options)
+
+  table <- results[["results"]][["ttest"]][["data"]]
+  jaspTools::expect_equal_tables(table, list(
+    -0.153, 0.878, "contNormal", -0.214, 99, 0.831
+  ))
+})
+```
+
+### Setting Up Options
+
+Use `analysisOptions()` to get an options list pre-populated with defaults:
+
+```r
+options <- analysisOptions("TTestIndependentSamples")
+# Then override only what you need:
+options$dependent <- "contNormal"
+options$meanDifference <- TRUE
+```
+
+### Table Tests
+
+`expect_equal_tables()` compares the analysis output table to a reference list of values:
+
+```r
+jaspTools::expect_equal_tables(table, list(
+  "value1", "value2", "value3"  # expected cell values in row order
+))
+```
+
+To generate the expected values list automatically:
+
+```r
+# Run the analysis, then:
+jaspTools::makeTestTable(table)
+# Prints a list(...) you can paste into your test
+```
+
+You can also bootstrap a manual test file by setting `makeTests = TRUE`:
+
+```r
+results <- runAnalysis("TTestIndependentSamples", "test.csv", options,
+                       makeTests = TRUE)
+# Prints boilerplate test code to the console — copy, refine, and save
+```
+
+### Plot Tests
+
+Plot tests use SVG snapshot comparison:
+
+```r
+test_that("T-Test plot matches", {
+  options <- analysisOptions("TTestIndependentSamples")
+  options$dependent <- "contNormal"
+  options$groupingVariable <- "facGender"
+  options$descriptivesPlots <- TRUE
+
+  results <- runAnalysis("TTestIndependentSamples", "test.csv", options)
+
+  plotName <- results[["results"]][["descriptives"]][["collection"]][["descriptives_descriptivesPlot"]][["data"]]
+  testPlot <- results[["state"]][["figures"]][[plotName]][["obj"]]
+  jaspTools::expect_equal_plots(testPlot, "descriptives-plot")
+})
+```
+
+On first run, the reference SVG is created in `_snaps/`. Subsequent runs compare against it.
+
+### Managing Plot Snapshots
+
+When a plot intentionally changes, update the reference:
+
+```r
+jaspTools::manageTestPlots()
+```
+
+This opens a Shiny app showing old vs. new plots. Accepting a change updates the SVG snapshot.
+
+### Testing Errors and Validation
+
+```r
+test_that("T-Test gives validation error with zero-variance variable", {
+  options <- analysisOptions("TTestIndependentSamples")
+  options$dependent <- "debMiss30"
+  options$groupingVariable <- "facGender"
+
+  results <- runAnalysis("TTestIndependentSamples", "test.csv", options)
+
+  expect_identical(results[["status"]], "validationError")
+})
+```
+
+## Running Tests
+
+```r
+# All tests in the module
+jaspTools::testAll()
+
+# A single analysis
+jaspTools::testAnalysis("TTestIndependentSamples")
+```
+
+### Debugging Failures
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| **Failure** (values differ) | Output changed intentionally | Update reference with `makeTestTable()` / `manageTestPlots()` |
+| **Failure** (values differ) | Unintentional regression | Fix the R code |
+| **Error** (test crashes) | R code throws an exception | Run the analysis interactively in RStudio to debug |
+| **Plot failure** | SVG differs | Run `manageTestPlots()` to review; accept if change is intentional |
+
+## GitHub Actions CI {#sec-ci}
+
+Every JASP module should have a CI workflow that runs tests on push and PR:
+
+```yaml
+# .github/workflows/unittests.yml
+name: Unit Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macOS-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jasp-stats/jasp-actions/setup-test-env@master
+      - uses: jasp-stats/jasp-actions/run-unit-tests@master
+```
+
+If your module requires JAGS:
+
+```yaml
+      - uses: jasp-stats/jasp-actions/setup-test-env@master
+        with:
+          requiresJAGS: true
+```
+
+## Test Coverage Goals
+
+| Module type | Minimum coverage |
+|------------|-----------------|
+| Official JASP module | ≥ 70% of analyses have tests |
+| Community module | At least one test per analysis that runs without error |
+
+For the full module checklists, see @sec-publishing.

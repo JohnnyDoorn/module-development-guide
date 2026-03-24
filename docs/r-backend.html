@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.340">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>JASP Module Development Guide - 5&nbsp; Writing the R Backend</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./qml-r-connection.html" rel="next">
+<link href="./qml-interface.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="custom.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./anatomy.html">Building Your Module</a></li><li class="breadcrumb-item"><a href="./r-backend.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Writing the R Backend</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">JASP Module Development Guide</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/jasp-stats/jasp-desktop" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Welcome &amp; Overview</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Setting Up Your Environment</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Building Your Module</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Module Anatomy</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./qml-interface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Designing the QML Interface</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./r-backend.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Writing the R Backend</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./qml-r-connection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Connecting QML to R</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./jasptools-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Running &amp; Debugging with jaspTools</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false">
+ <span class="menu-text">Improving Your Module</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./coding-standards.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Coding Standards</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./errors-ux.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Error Messages &amp; User Experience</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Testing Your Module</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debugging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Debugging &amp; Logging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./i18n.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Translating Your Module</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./upgrades.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Backward Compatibility (Upgrades.qml)</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="false">
+ <span class="menu-text">Finalizing Your Module</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./versioning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Versioning &amp; Releases</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./publishing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Publishing Your Module</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Git Workflow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./licensing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Licensing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./building-jasp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Building JASP from Source</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ai-assisted.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">AI-Assisted Module Development</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="false">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-skeleton.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Analysis Skeleton (R Template)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-qml-style.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">QML Style Example</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-option-names.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Standardised Option Names Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-errors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Error Message Reference</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./appendix-resources.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">Learning Resources</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-jaspresults" id="toc-sec-jaspresults" class="nav-link active" data-scroll-target="#sec-jaspresults"><span class="header-section-number">5.1</span> Understanding jaspResults</a>
+  <ul class="collapse">
+  <li><a href="#why-this-matters" id="toc-why-this-matters" class="nav-link" data-scroll-target="#why-this-matters"><span class="header-section-number">5.1.1</span> Why this matters</a></li>
+  <li><a href="#automatic-caching" id="toc-automatic-caching" class="nav-link" data-scroll-target="#automatic-caching"><span class="header-section-number">5.1.2</span> Automatic caching</a></li>
+  <li><a href="#real-world-example-independent-samples-t-test" id="toc-real-world-example-independent-samples-t-test" class="nav-link" data-scroll-target="#real-world-example-independent-samples-t-test"><span class="header-section-number">5.1.3</span> Real-world example: Independent Samples T-Test</a></li>
+  </ul></li>
+  <li><a href="#sec-main-function" id="toc-sec-main-function" class="nav-link" data-scroll-target="#sec-main-function"><span class="header-section-number">5.2</span> The analysis function pattern</a></li>
+  <li><a href="#step-2-check-if-results-can-be-computed" id="toc-step-2-check-if-results-can-be-computed" class="nav-link" data-scroll-target="#step-2-check-if-results-can-be-computed"><span class="header-section-number">5.3</span> Step 2: Check if results can be computed</a></li>
+  <li><a href="#sec-preload-data" id="toc-sec-preload-data" class="nav-link" data-scroll-target="#sec-preload-data"><span class="header-section-number">5.4</span> Step 3: Read the dataset</a>
+  <ul class="collapse">
+  <li><a href="#preloaddata-the-preferred-approach" id="toc-preloaddata-the-preferred-approach" class="nav-link" data-scroll-target="#preloaddata-the-preferred-approach"><span class="header-section-number">5.4.1</span> preloadData — the preferred approach</a></li>
+  <li><a href="#when-to-disable-preloading" id="toc-when-to-disable-preloading" class="nav-link" data-scroll-target="#when-to-disable-preloading"><span class="header-section-number">5.4.2</span> When to disable preloading</a></li>
+  <li><a href="#handling-analyses-that-previously-read-data-multiple-times" id="toc-handling-analyses-that-previously-read-data-multiple-times" class="nav-link" data-scroll-target="#handling-analyses-that-previously-read-data-multiple-times"><span class="header-section-number">5.4.3</span> Handling analyses that previously read data multiple times</a></li>
+  <li><a href="#column-encoding" id="toc-column-encoding" class="nav-link" data-scroll-target="#column-encoding"><span class="header-section-number">5.4.4</span> Column encoding</a></li>
+  </ul></li>
+  <li><a href="#sec-error-checking" id="toc-sec-error-checking" class="nav-link" data-scroll-target="#sec-error-checking"><span class="header-section-number">5.5</span> Step 4: Check for errors</a>
+  <ul class="collapse">
+  <li><a href="#available-error-checks" id="toc-available-error-checks" class="nav-link" data-scroll-target="#available-error-checks"><span class="header-section-number">5.5.1</span> Available error checks</a></li>
+  </ul></li>
+  <li><a href="#sec-create-output" id="toc-sec-create-output" class="nav-link" data-scroll-target="#sec-create-output"><span class="header-section-number">5.6</span> Step 5: Create output</a>
+  <ul class="collapse">
+  <li><a href="#sec-tables" id="toc-sec-tables" class="nav-link" data-scroll-target="#sec-tables"><span class="header-section-number">5.6.1</span> Tables</a></li>
+  <li><a href="#sec-plots" id="toc-sec-plots" class="nav-link" data-scroll-target="#sec-plots"><span class="header-section-number">5.6.2</span> Plots</a></li>
+  <li><a href="#text-html-output" id="toc-text-html-output" class="nav-link" data-scroll-target="#text-html-output"><span class="header-section-number">5.6.3</span> Text (HTML) output</a></li>
+  </ul></li>
+  <li><a href="#sec-containers" id="toc-sec-containers" class="nav-link" data-scroll-target="#sec-containers"><span class="header-section-number">5.7</span> Containers: grouping output elements</a></li>
+  <li><a href="#sec-state" id="toc-sec-state" class="nav-link" data-scroll-target="#sec-state"><span class="header-section-number">5.8</span> State: caching computed results</a>
+  <ul class="collapse">
+  <li><a href="#real-world-example-correlation-module" id="toc-real-world-example-correlation-module" class="nav-link" data-scroll-target="#real-world-example-correlation-module"><span class="header-section-number">5.8.1</span> Real-world example: Correlation module</a></li>
+  <li><a href="#what-can-you-store-in-state" id="toc-what-can-you-store-in-state" class="nav-link" data-scroll-target="#what-can-you-store-in-state"><span class="header-section-number">5.8.2</span> What can you store in state?</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jasp-stats/jasp-desktop/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec-r-backend" class="quarto-section-identifier"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Writing the R Backend</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="sec-jaspresults" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="sec-jaspresults"><span class="header-section-number">5.1</span> Understanding jaspResults</h2>
+<p>The central concept in JASP’s R API is <code>jaspResults</code> — a <strong>persistent, named container</strong> that lives for the entire lifetime of an analysis. Think of it as a big box you can throw things into and pull things out of at any point:</p>
+<ul>
+<li><strong>Tables</strong> (<code>createJaspTable</code>)</li>
+<li><strong>Plots</strong> (<code>createJaspPlot</code>)</li>
+<li><strong>Containers</strong> (<code>createJaspContainer</code>) — grouping boxes that hold other tables/plots</li>
+<li><strong>State</strong> (<code>createJaspState</code>) — cached R objects (models, intermediate results)</li>
+<li><strong>HTML</strong> (<code>createJaspHtml</code>) — free-form text output</li>
+</ul>
+<p>You store items by assigning them to named slots: <code>jaspResults[["myTable"]] &lt;- table</code>. You retrieve them the same way: <code>jaspResults[["myTable"]]</code>. If a slot is <code>NULL</code>, the item hasn’t been created yet.</p>
+<section id="why-this-matters" class="level3" data-number="5.1.1">
+<h3 data-number="5.1.1" class="anchored" data-anchor-id="why-this-matters"><span class="header-section-number">5.1.1</span> Why this matters</h3>
+<p>In a traditional R script you’d pass individual objects between functions — the model object to the table function, then to the plot function, etc. In JASP, <strong>every function just receives <code>jaspResults</code></strong> and can reach into it for whatever it needs. This eliminates the need to pass around dozens of objects:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<div>
+
+<pre class="mermaid mermaid-js">flowchart TD
+    Main["Main function"] --&gt;|"stores table"| JR["jaspResults"]
+    Main --&gt;|"stores state"| JR
+    TableFn[".fillTable()"] --&gt;|"reads state"| JR
+    PlotFn[".fillPlot()"] --&gt;|"reads state"| JR
+    TableFn --&gt;|"fills table"| JR
+    PlotFn --&gt;|"fills plot"| JR
+</pre>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="automatic-caching" class="level3" data-number="5.1.2">
+<h3 data-number="5.1.2" class="anchored" data-anchor-id="automatic-caching"><span class="header-section-number">5.1.2</span> Automatic caching</h3>
+<p>Every item in <code>jaspResults</code> declares which options it <strong>depends on</strong> (via <code>$dependOn()</code>). When the user changes an option in the GUI:</p>
+<ul>
+<li>Items that depend on the changed option are <strong>automatically invalidated</strong> and recreated</li>
+<li>Items that don’t depend on it are <strong>kept as-is</strong> — no recomputation</li>
+</ul>
+<p>This is why every output function starts with <code>if (!is.null(jaspResults[["myTable"]])) return()</code> — if the table already exists and its dependencies haven’t changed, skip it entirely.</p>
+</section>
+<section id="real-world-example-independent-samples-t-test" class="level3" data-number="5.1.3">
+<h3 data-number="5.1.3" class="anchored" data-anchor-id="real-world-example-independent-samples-t-test"><span class="header-section-number">5.1.3</span> Real-world example: Independent Samples T-Test</h3>
+<p>Here’s how the actual JASP t-test module uses <code>jaspResults</code> (simplified from the source):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>TTestIndependentSamples <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options) {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  ready <span class="ot">&lt;-</span> <span class="fu">length</span>(options[[<span class="st">"dependent"</span>]]) <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> options[[<span class="st">"group"</span>]] <span class="sc">!=</span> <span class="st">""</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready) {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    dataset <span class="ot">&lt;-</span> <span class="fu">.ttestReadData</span>(dataset, options, <span class="st">"independent"</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.ttestCheckErrors</span>(dataset, options, <span class="st">"independent"</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Each function reaches into jaspResults for what it needs</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestMainTable</span>(      jaspResults, dataset, options, ready)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestNormalTable</span>(    jaspResults, dataset, options, ready)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestQQPlot</span>(         jaspResults, dataset, options, ready)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestDescriptives</span>(   jaspResults, dataset, options, ready)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.ttestDescriptivePlot</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Notice: <strong>no return values are passed between functions</strong>. Every function writes to and reads from <code>jaspResults</code>. If the user only toggles the “Descriptives” checkbox, only <code>.ttestDescriptives()</code> and <code>.ttestDescriptivePlot()</code> re-run — the main table is still cached.</p>
+</section>
+</section>
+<section id="sec-main-function" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="sec-main-function"><span class="header-section-number">5.2</span> The analysis function pattern</h2>
+<p>Every JASP analysis follows the same structure. The main function name must match the <code>func</code> field in <code>Description.qml</code> (case-sensitive). It always receives three arguments:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>MyAnalysis <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options) {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 1. Check if we can compute results</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  ready <span class="ot">&lt;-</span> <span class="fu">length</span>(options[[<span class="st">"variables"</span>]]) <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 2. Read data and check for errors</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready) {</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    dataset <span class="ot">&lt;-</span> <span class="fu">.myReadData</span>(dataset, options)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.myCheckErrors</span>(dataset, options)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 3. Create outputs (tables, plots)</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.myMainTable</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.myMainPlot</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<table class="table">
+<colgroup>
+<col style="width: 43%">
+<col style="width: 56%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>jaspResults</code></td>
+<td>The persistent results container — store all tables, plots, state, and containers here</td>
+</tr>
+<tr class="even">
+<td><code>dataset</code></td>
+<td>The dataset, preloaded by JASP when <code>preloadData: true</code> (the default and recommended setting). <code>NULL</code> if <code>preloadData: false</code></td>
+</tr>
+<tr class="odd">
+<td><code>options</code></td>
+<td>Named list of user selections from the QML form</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Always access options with double brackets: <code>options[["myOption"]]</code>. Single brackets or <code>$</code> allow partial matching which can cause subtle bugs.</p>
+</div>
+</div>
+</section>
+<section id="step-2-check-if-results-can-be-computed" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="step-2-check-if-results-can-be-computed"><span class="header-section-number">5.3</span> Step 2: Check if results can be computed</h2>
+<p>Most analyses need minimum input before computing. Determine this early:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ready <span class="ot">&lt;-</span> <span class="fu">length</span>(options[[<span class="st">"variables"</span>]]) <span class="sc">&gt;</span> <span class="dv">0</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When <code>ready</code> is <code>FALSE</code>, your output functions should still create tables and plots (showing dots/empty placeholders) but skip the computation step.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+  A(["Start"]) --&gt; Decision{"Input sufficient?"}
+  Decision -- yes --&gt; B["Compute &amp; display results"]
+  Decision -- "not yet" --&gt; C["Show empty placeholders"]
+</pre>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-preload-data" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="sec-preload-data"><span class="header-section-number">5.4</span> Step 3: Read the dataset</h2>
+<section id="preloaddata-the-preferred-approach" class="level3" data-number="5.4.1">
+<h3 data-number="5.4.1" class="anchored" data-anchor-id="preloaddata-the-preferred-approach"><span class="header-section-number">5.4.1</span> preloadData — the preferred approach</h3>
+<p>With <code>preloadData: true</code> (the default in <code>Description.qml</code>), JASP passes the dataset directly to your R function via the <code>dataset</code> argument. <strong>This is the preferred way to handle data in JASP.</strong> Columns are automatically converted to the types requested by QML components — if an <code>AssignedVariablesList</code> has <code>allowedColumns: ["scale"]</code>, those columns arrive in R as numeric.</p>
+<p>Because the data is already loaded, your “read data” helper typically just does any necessary subsetting or listwise deletion:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>.myReadData <span class="ot">&lt;-</span> <span class="cf">function</span>(dataset, options) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># For listwise deletion (replaces the old exclude.na.listwise argument):</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  exclude <span class="ot">&lt;-</span> <span class="fu">unlist</span>(options[[<span class="st">"variables"</span>]])</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  dataset <span class="ot">&lt;-</span> jaspBase<span class="sc">::</span><span class="fu">excludeNaListwise</span>(dataset, exclude)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dataset)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>preloadData: true</code> replaces the legacy <code>readDataSetToEnd()</code> / <code>.readDataSetToEnd()</code> functions. You no longer need to call these — the data arrives ready to use.</p>
+</div>
+</div>
+</section>
+<section id="when-to-disable-preloading" class="level3" data-number="5.4.2">
+<h3 data-number="5.4.2" class="anchored" data-anchor-id="when-to-disable-preloading"><span class="header-section-number">5.4.2</span> When to disable preloading</h3>
+<p>For some analyses it’s not yet possible to use preloaded data, because JASP cannot infer which column names appear in the options (e.g., <strong>JAGS</strong>, <strong>SEM</strong> where variable names are embedded in syntax strings). Disable preloading per-analysis in <code>Description.qml</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode qml code-with-copy"><code class="sourceCode qml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Analysis</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">title</span><span class="op">:</span>         <span class="fu">qsTr</span>(<span class="st">"Structural Equation Modeling"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">func</span><span class="op">:</span>          <span class="st">"SEM"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">preloadData</span><span class="op">:</span>   <span class="kw">false</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When <code>preloadData: false</code>, the <code>dataset</code> argument is <code>NULL</code> and you must read data manually.</p>
+</section>
+<section id="handling-analyses-that-previously-read-data-multiple-times" class="level3" data-number="5.4.3">
+<h3 data-number="5.4.3" class="anchored" data-anchor-id="handling-analyses-that-previously-read-data-multiple-times"><span class="header-section-number">5.4.3</span> Handling analyses that previously read data multiple times</h3>
+<p>If your analysis previously called <code>readDataSetToEnd()</code> multiple times (e.g., reading a layout variable separately from the main dataset), the preloaded <code>dataset</code> now contains <strong>all</strong> requested columns in a single data frame. You need to split or subset it yourself:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove layout columns before passing to the analysis package</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>dataset[layoutVariables] <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="cn">NULL</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or split into two data frames</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>mainData   <span class="ot">&lt;-</span> dataset[, mainVariables]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>layoutData <span class="ot">&lt;-</span> dataset[, layoutVariables]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="column-encoding" class="level3" data-number="5.4.4">
+<h3 data-number="5.4.4" class="anchored" data-anchor-id="column-encoding"><span class="header-section-number">5.4.4</span> Column encoding</h3>
+<p>Column names are <strong>encoded</strong> (e.g., <code>JaspColumn_.1._Encoded</code>) to handle special characters. The values in <code>options</code> are also encoded, so you can subset directly:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>dataset[, options[[<span class="st">"variables"</span>]]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When displaying column names to users (e.g., as axis tick labels in plots), decode them:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>jaspBase<span class="sc">::</span><span class="fu">decodeColNames</span>(<span class="st">"JaspColumn_.1._Encoded"</span>)  <span class="co"># returns original name</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Only decode at the last moment before display. Keep names encoded internally for reliable matching.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-error-checking" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="sec-error-checking"><span class="header-section-number">5.5</span> Step 4: Check for errors</h2>
+<p>Even with sufficient input, data may contain problems. Use <code>.hasErrors()</code> for common checks:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">.hasErrors</span>(dataset,</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">type                 =</span> <span class="fu">c</span>(<span class="st">"observations"</span>, <span class="st">"variance"</span>, <span class="st">"infinity"</span>),</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">all.target           =</span> options[[<span class="st">"variables"</span>]],</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">observations.amount  =</span> <span class="st">"&lt; 3"</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">exitAnalysisIfErrors =</span> <span class="cn">TRUE</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="available-error-checks" class="level3" data-number="5.5.1">
+<h3 data-number="5.5.1" class="anchored" data-anchor-id="available-error-checks"><span class="header-section-number">5.5.1</span> Available error checks</h3>
+<table class="table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 38%">
+<col style="width: 41%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Check</th>
+<th>What it does</th>
+<th>Key argument</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>infinity</code></td>
+<td>Infinite values in variables</td>
+<td><code>target</code>, <code>grouping</code></td>
+</tr>
+<tr class="even">
+<td><code>negativeValues</code></td>
+<td>Negative values</td>
+<td><code>target</code></td>
+</tr>
+<tr class="odd">
+<td><code>missingValues</code></td>
+<td>Missing values (NA)</td>
+<td><code>target</code></td>
+</tr>
+<tr class="even">
+<td><code>observations</code></td>
+<td>Count of observations vs threshold</td>
+<td><code>amount</code> (e.g., <code>"&lt; 2"</code>)</td>
+</tr>
+<tr class="odd">
+<td><code>variance</code></td>
+<td>Zero or specific variance</td>
+<td><code>equalTo</code> (default: <code>0</code>)</td>
+</tr>
+<tr class="even">
+<td><code>factorLevels</code></td>
+<td>Number of factor levels</td>
+<td><code>amount</code> (e.g., <code>"&lt; 2"</code>)</td>
+</tr>
+<tr class="odd">
+<td><code>limits</code></td>
+<td>Value within min/max bounds</td>
+<td><code>min</code>, <code>max</code></td>
+</tr>
+</tbody>
+</table>
+<p>Prefix arguments with the check name: <code>observations.amount</code>, <code>variance.target</code>, etc. Use <code>all.</code> prefix to apply to all checks: <code>all.target = options[["variables"]]</code>.</p>
+</section>
+</section>
+<section id="sec-create-output" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="sec-create-output"><span class="header-section-number">5.6</span> Step 5: Create output</h2>
+<section id="sec-tables" class="level3" data-number="5.6.1">
+<h3 data-number="5.6.1" class="anchored" data-anchor-id="sec-tables"><span class="header-section-number">5.6.1</span> Tables</h3>
+<p>Tables are the most common output. The lifecycle:</p>
+<ol type="1">
+<li><strong>Check cache</strong> — if <code>jaspResults[["myTable"]]</code> exists, skip creation</li>
+<li><strong>Create</strong> — <code>createJaspTable(title = "My Results")</code></li>
+<li><strong>Set dependencies</strong> — <code>$dependOn(c("opt1", "opt2"))</code></li>
+<li><strong>Define columns</strong> — <code>$addColumnInfo(name, title, type)</code></li>
+<li><strong>Attach to output</strong> — <code>jaspResults[["myTable"]] &lt;- table</code></li>
+<li><strong>Fill with data</strong> — <code>$addRows(list(...))</code></li>
+</ol>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>.myMainTable <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options, ready) {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Skip if already computed and cached</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"myTable"</span>]])) <span class="fu">return</span>()</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create and configure</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  table <span class="ot">&lt;-</span> <span class="fu">createJaspTable</span>(<span class="at">title =</span> <span class="fu">gettext</span>(<span class="st">"My Results"</span>))</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  table<span class="sc">$</span><span class="fu">dependOn</span>(<span class="fu">c</span>(<span class="st">"variables"</span>, <span class="st">"ciLevel"</span>))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Define columns</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  table<span class="sc">$</span><span class="fu">addColumnInfo</span>(<span class="at">name =</span> <span class="st">"variable"</span>, <span class="at">title =</span> <span class="fu">gettext</span>(<span class="st">"Variable"</span>), <span class="at">type =</span> <span class="st">"string"</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  table<span class="sc">$</span><span class="fu">addColumnInfo</span>(<span class="at">name =</span> <span class="st">"mean"</span>,     <span class="at">title =</span> <span class="fu">gettext</span>(<span class="st">"Mean"</span>),     <span class="at">type =</span> <span class="st">"number"</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  table<span class="sc">$</span><span class="fu">addColumnInfo</span>(<span class="at">name =</span> <span class="st">"p"</span>,        <span class="at">title =</span> <span class="st">"p"</span>,                 <span class="at">type =</span> <span class="st">"pvalue"</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Attach to jaspResults (displays immediately, even if empty)</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  jaspResults[[<span class="st">"myTable"</span>]] <span class="ot">&lt;-</span> table</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>ready) <span class="fu">return</span>()</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fill with results</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (variable <span class="cf">in</span> options[[<span class="st">"variables"</span>]]) {</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    results <span class="ot">&lt;-</span> <span class="fu">t.test</span>(dataset[[variable]])</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    table<span class="sc">$</span><span class="fu">addRows</span>(<span class="fu">list</span>(</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">variable =</span> variable,</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">mean     =</span> results<span class="sc">$</span>estimate,</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">p        =</span> results<span class="sc">$</span>p.value</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="column-types" class="level4" data-number="5.6.1.1">
+<h4 data-number="5.6.1.1" class="anchored" data-anchor-id="column-types"><span class="header-section-number">5.6.1.1</span> Column types</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+<th>Format options</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>string</code></td>
+<td>Text</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td><code>number</code></td>
+<td>Decimal number</td>
+<td><code>sf:4</code>, <code>dp:3</code>, <code>pc</code> (percentage)</td>
+</tr>
+<tr class="odd">
+<td><code>integer</code></td>
+<td>Whole number</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td><code>pvalue</code></td>
+<td>p-value with smart formatting</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="footnotes" class="level4" data-number="5.6.1.2">
+<h4 data-number="5.6.1.2" class="anchored" data-anchor-id="footnotes"><span class="header-section-number">5.6.1.2</span> Footnotes</h4>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>table<span class="sc">$</span><span class="fu">addFootnote</span>(<span class="at">message =</span> <span class="fu">gettext</span>(<span class="st">"Some note about the table."</span>))</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Target specific cells:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>table<span class="sc">$</span><span class="fu">addFootnote</span>(<span class="at">message =</span> <span class="st">"..."</span>, <span class="at">colNames =</span> <span class="st">"p"</span>, <span class="at">rowNames =</span> <span class="st">"var1"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="reporting-errors-on-tables" class="level4" data-number="5.6.1.3">
+<h4 data-number="5.6.1.3" class="anchored" data-anchor-id="reporting-errors-on-tables"><span class="header-section-number">5.6.1.3</span> Reporting errors on tables</h4>
+<p>Use <code>try()</code> + <code>$setError()</code> to handle computation failures gracefully:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">try</span>(<span class="fu">someComputation</span>())</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">inherits</span>(result, <span class="st">"try-error"</span>)) {</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  table<span class="sc">$</span><span class="fu">setError</span>(<span class="fu">as.character</span>(result))</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="sec-plots" class="level3" data-number="5.6.2">
+<h3 data-number="5.6.2" class="anchored" data-anchor-id="sec-plots"><span class="header-section-number">5.6.2</span> Plots</h3>
+<p>Plots follow the same pattern. JASP only supports <code>ggplot2</code>.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>.myMainPlot <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options, ready) {</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"myPlot"</span>]])) <span class="fu">return</span>()</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  plot <span class="ot">&lt;-</span> <span class="fu">createJaspPlot</span>(<span class="at">title =</span> <span class="fu">gettext</span>(<span class="st">"My Plot"</span>), <span class="at">width =</span> <span class="dv">480</span>, <span class="at">height =</span> <span class="dv">320</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  plot<span class="sc">$</span><span class="fu">dependOn</span>(<span class="fu">c</span>(<span class="st">"variables"</span>, <span class="st">"plotOption"</span>))</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  jaspResults[[<span class="st">"myPlot"</span>]] <span class="ot">&lt;-</span> plot</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>ready) <span class="fu">return</span>()</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(dataset, ggplot2<span class="sc">::</span><span class="fu">aes</span>(<span class="at">x =</span> .data[[options[[<span class="st">"variables"</span>]][<span class="dv">1</span>]]]])) <span class="sc">+</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_histogram</span>()</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  plot<span class="sc">$</span>plotObject <span class="ot">&lt;-</span> p</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="text-html-output" class="level3" data-number="5.6.3">
+<h3 data-number="5.6.3" class="anchored" data-anchor-id="text-html-output"><span class="header-section-number">5.6.3</span> Text (HTML) output</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>htmlOutput <span class="ot">&lt;-</span> <span class="fu">createJaspHtml</span>(<span class="at">text =</span> <span class="fu">gettextf</span>(<span class="st">"Variable %s was excluded."</span>, varName))</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>htmlOutput<span class="sc">$</span><span class="fu">dependOn</span>(<span class="st">"variables"</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>jaspResults[[<span class="st">"myText"</span>]] <span class="ot">&lt;-</span> htmlOutput</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>HTML tags (<code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>) can be used for formatting.</p>
+</section>
+</section>
+<section id="sec-containers" class="level2" data-number="5.7">
+<h2 data-number="5.7" class="anchored" data-anchor-id="sec-containers"><span class="header-section-number">5.7</span> Containers: grouping output elements</h2>
+<p>Containers group related tables and plots visually and functionally. Dependencies set on a container are inherited by all its contents.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>container <span class="ot">&lt;-</span> <span class="fu">createJaspContainer</span>(<span class="at">title =</span> <span class="fu">gettext</span>(<span class="st">"Descriptive Plots"</span>))</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>container<span class="sc">$</span><span class="fu">dependOn</span>(<span class="fu">c</span>(<span class="st">"variables"</span>, <span class="st">"plotDescriptives"</span>))</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>jaspResults[[<span class="st">"descContainer"</span>]] <span class="ot">&lt;-</span> container</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (variable <span class="cf">in</span> options[[<span class="st">"variables"</span>]]) {</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(container[[variable]])) <span class="cf">next</span>  <span class="co"># skip if cached</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  plot <span class="ot">&lt;-</span> <span class="fu">createJaspPlot</span>(<span class="at">title =</span> variable, <span class="at">width =</span> <span class="dv">480</span>, <span class="at">height =</span> <span class="dv">320</span>)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  plot<span class="sc">$</span><span class="fu">dependOn</span>(<span class="at">optionContainsValue =</span> <span class="fu">list</span>(<span class="at">variables =</span> variable))</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  container[[variable]] <span class="ot">&lt;-</span> plot</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ... fill plot ...</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/r-guide/example_visual_grouping.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Visual grouping example</figcaption>
+</figure>
+</div>
+<p>Setting an error on a container propagates to all its contents:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>container<span class="sc">$</span><span class="fu">setError</span>(<span class="fu">gettext</span>(<span class="st">"Something went wrong."</span>))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (container<span class="sc">$</span><span class="fu">getError</span>()) <span class="fu">return</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-state" class="level2" data-number="5.8">
+<h2 data-number="5.8" class="anchored" data-anchor-id="sec-state"><span class="header-section-number">5.8</span> State: caching computed results</h2>
+<p>When multiple output elements (tables, plots, assumption checks) share the same expensive computation, you don’t want to run it separately for each. Use <code>createJaspState()</code> to <strong>store any R object</strong> in <code>jaspResults</code> and retrieve it later:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>.myComputeResults <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options) {</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Already cached? Return immediately.</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"myState"</span>]]))</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(jaspResults[[<span class="st">"myState"</span>]]<span class="sc">$</span>object)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Expensive computation (e.g., fitting a model)</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">model =</span> <span class="fu">lm</span>(y <span class="sc">~</span> x, <span class="at">data =</span> dataset))</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Store in jaspResults — cached until dependencies change</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  state <span class="ot">&lt;-</span> <span class="fu">createJaspState</span>(results)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  state<span class="sc">$</span><span class="fu">dependOn</span>(<span class="fu">c</span>(<span class="st">"dependent"</span>, <span class="st">"covariates"</span>))</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  jaspResults[[<span class="st">"myState"</span>]] <span class="ot">&lt;-</span> state</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(results)</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now both the table function and the plot function call <code>.myComputeResults()</code>. On the first call, the model is fitted and stored. On the second call, the cached result is returned instantly.</p>
+<section id="real-world-example-correlation-module" class="level3" data-number="5.8.1">
+<h3 data-number="5.8.1" class="anchored" data-anchor-id="real-world-example-correlation-module"><span class="header-section-number">5.8.1</span> Real-world example: Correlation module</h3>
+<p>The JASP Correlation analysis computes one set of correlation results and reuses them across the main table, assumption checks, scatter plot, and heatmap:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>CorrelationInternal <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options) {</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  ready <span class="ot">&lt;-</span> <span class="fu">length</span>(options[[<span class="st">"variables"</span>]]) <span class="sc">&gt;=</span> <span class="dv">2</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ready) {</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    dataset <span class="ot">&lt;-</span> <span class="fu">.corrReadData</span>(dataset, options)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">.hasErrors</span>(dataset, <span class="at">type =</span> <span class="fu">c</span>(<span class="st">"infinity"</span>, <span class="st">"variance"</span>, <span class="st">"observations"</span>),</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">observations.amount  =</span> <span class="st">"&lt; 3"</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>               <span class="at">observations.target  =</span> options[[<span class="st">"variables"</span>]],</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>               <span class="at">exitAnalysisIfErrors =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute once, reuse everywhere</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  corrResults <span class="ot">&lt;-</span> <span class="fu">.corrMainResults</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrAssumptions</span>(jaspResults, dataset, options, ready, corrResults)</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrPlot</span>(       jaspResults, dataset, options, ready, corrResults)</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrHeatmap</span>(    jaspResults, options,          ready, corrResults)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>()</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>.corrMainResults <span class="ot">&lt;-</span> <span class="cf">function</span>(jaspResults, dataset, options, ready) {</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return cached results if both the table and state still exist</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"mainTable"</span>]]) <span class="sc">&amp;&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(jaspResults[[<span class="st">"results"</span>]]))</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(jaspResults[[<span class="st">"results"</span>]]<span class="sc">$</span>object)</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>  mainTable <span class="ot">&lt;-</span> <span class="fu">.corrInitMainTable</span>(jaspResults, options)</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>  corrResults <span class="ot">&lt;-</span> <span class="fu">.corrComputeResults</span>(jaspResults, dataset, options, ready)</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">.corrFillTableMain</span>(mainTable, corrResults, options, ready)</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(corrResults)</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The pattern: <code>.corrMainResults()</code> either returns the cached state or computes fresh results. Either way, it returns the same object, and every downstream function uses it without caring whether it was cached or freshly computed.</p>
+</section>
+<section id="what-can-you-store-in-state" class="level3" data-number="5.8.2">
+<h3 data-number="5.8.2" class="anchored" data-anchor-id="what-can-you-store-in-state"><span class="header-section-number">5.8.2</span> What can you store in state?</h3>
+<p>Anything — model objects, matrices, lists of results, data frames. The only constraint is that the object must be serialisable (which almost everything in R is). Common patterns:</p>
+<table class="table">
+<colgroup>
+<col style="width: 73%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>What to cache</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Fitted model (<code>lm</code>, <code>aov</code>, etc.)</td>
+<td>Avoids refitting when the user toggles a plot checkbox</td>
+</tr>
+<tr class="even">
+<td>Correlation/test-statistic matrix</td>
+<td>Shared between main table, assumption table, and plot</td>
+</tr>
+<tr class="odd">
+<td>Bootstrap samples</td>
+<td>Expensive to generate; reused for CIs and plots</td>
+</tr>
+<tr class="even">
+<td>Preprocessed dataset</td>
+<td>When cleaning/transforming is slow</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./qml-interface.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Designing the QML Interface</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./qml-r-connection.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Connecting QML to R</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

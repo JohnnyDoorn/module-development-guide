@@ -1,0 +1,933 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "JASP Module Development Guide",
+    "section": "",
+    "text": "Welcome & Overview\nThis guide covers everything you need to know to develop a JASP module — from setting up your environment to publishing in the JASP Module Library."
+  },
+  {
+    "objectID": "index.html#what-is-a-jasp-module",
+    "href": "index.html#what-is-a-jasp-module",
+    "title": "JASP Module Development Guide",
+    "section": "What is a JASP module?",
+    "text": "What is a JASP module?\nA JASP module is an extension that adds new statistical analyses to JASP. Modules appear in the ribbon bar at the top of JASP and can be installed via the + icon.\n\n\n\nCore modules in the JASP ribbon\n\n\n\n\n\nAdditional modules available for installation\n\n\nInternally, a JASP module is an R package with additional QML files for the graphical interface:\n\n\n\nThe three building blocks of a JASP module\n\n\n\nR code — your statistical computations, using any CRAN/Bioconductor packages\nQML interface — the options panel users interact with\njaspResults — the bridge that renders tables, plots, and text in JASP’s output"
+  },
+  {
+    "objectID": "index.html#who-is-this-guide-for",
+    "href": "index.html#who-is-this-guide-for",
+    "title": "JASP Module Development Guide",
+    "section": "Who is this guide for?",
+    "text": "Who is this guide for?\nAnyone who wants to create or contribute to JASP modules. You need:\n\nBasic R — functions, data manipulation, data.frame operations\nBasic Git/GitHub — clone, commit, push, pull requests\nFamiliarity with R packaging — helpful but not required (we’ll cover the essentials)\nQML knowledge — not required; you’ll learn it here\n\n\n\n\n\ngraph TD\n  subgraph Minimum\n    git --&gt; github\n    R --&gt; Functions\n  end\n  Template --&gt; QML\n  Functions --&gt; Packaging"
+  },
+  {
+    "objectID": "index.html#how-this-guide-is-organised",
+    "href": "index.html#how-this-guide-is-organised",
+    "title": "JASP Module Development Guide",
+    "section": "How this guide is organised",
+    "text": "How this guide is organised\n\n\n\n\n\n\n\nPart\nWhat you’ll learn\n\n\n\n\nI. Getting Started\nEnvironment setup, module template, file structure\n\n\nII. Building Your Module\nR backend (jaspResults API), QML interface, the QML↔︎R connection\n\n\nIII. Quality & Standards\nCoding style, error messages, i18n, testing, backward compatibility\n\n\nIV. Publishing & Maintenance\nVersioning, releasing, community/official module submission, Git workflow\n\n\nV. Advanced Topics\nAI-assisted development, building JASP from source, debugging, licensing"
+  },
+  {
+    "objectID": "index.html#quick-start",
+    "href": "index.html#quick-start",
+    "title": "JASP Module Development Guide",
+    "section": "Quick start",
+    "text": "Quick start\nThe fastest path to a working module:\n\nFork jaspModuleTemplate\nClone it locally\nInstall JASP nightly\nInstall your module as a development module in JASP (see Chapter 2)\nEdit R and QML files, recompile, refresh — iterate\n\nThe rest of this guide explains each step in detail."
+  },
+  {
+    "objectID": "setup.html#install-jasp-nightly-build",
+    "href": "setup.html#install-jasp-nightly-build",
+    "title": "2  Setting Up Your Environment",
+    "section": "Install JASP (nightly build)",
+    "text": "Install JASP (nightly build)\nYou need a recent version of JASP to develop modules. Nightly builds include the latest features.\n\nWindows & macOSLinux\n\n\nDownload the latest nightly build for your platform.\n\n\n# 1. Install flatpak if needed: https://flatpak.org/setup/\n# 2. Add the beta repository\nflatpak remote-add --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo\n\n# 3. Install JASP beta\nflatpak install flathub-beta org.jaspstats.JASP\n\n# 4. Launch in development mode\nflatpak run --branch=beta --devel org.jaspstats.JASP\n\n\n\n\n\n\nWarning\n\n\n\nJASP remembers the branch it was launched from. To switch back to stable: flatpak run --branch=stable org.jaspstats.JASP\n\n\nIf you see runtime/org.kde.Sdk/x86_64/6.7 not installed, fix it with:\nflatpak install org.kde.Sdk   # choose version 6.7"
+  },
+  {
+    "objectID": "setup.html#fork-and-clone-the-module-template",
+    "href": "setup.html#fork-and-clone-the-module-template",
+    "title": "2  Setting Up Your Environment",
+    "section": "Fork and clone the module template",
+    "text": "Fork and clone the module template\n\nGo to jaspModuleTemplate and click Fork.\nClone your fork:\n\ngit clone https://github.com/&lt;your-username&gt;/jaspModuleTemplate.git\ncd jaspModuleTemplate\nAlternatively, fork an existing module from jasp-stats."
+  },
+  {
+    "objectID": "setup.html#sec-renv",
+    "href": "setup.html#sec-renv",
+    "title": "2  Setting Up Your Environment",
+    "section": "Package Management with renv",
+    "text": "Package Management with renv\nJASP modules use renv to lock package versions. This ensures that your module builds reproducibly and that collaborators (and CI) use the exact same dependency versions.\nEvery module repository should contain a renv.lock file. When you start working on a module, bootstrap the renv environment with this script:\n# Set your GitHub PAT to avoid rate limits during package installation\nSys.setenv(GITHUB_PAT = \"&lt;your PAT&gt;\")\n\n# Activate the renv project (or confirm it's already active)\nif (is.null(renv::project())) {\n  message(\"This isn't an active renv project.\")\n  renv::activate()\n} else {\n  message(\"We're in an active renv project.\")\n}\n\n# Install all locked dependencies\nmessage(\"Restoring/synchronizing the project library.\")\nrenv::restore()\n\n# Install the module itself into the renv library\nmessage(\"Installing the package.\")\nrenv::install(\".\")\n\n# Print the library path — you'll need this for JASP developer mode\nmessage(\"R libPath for developer mode:\\n\", .libPaths()[1])\nThe last line prints the library path for your newly installed module. Copy this path — you will paste it into JASP’s developer mode settings (see below).\n\n\n\n\n\n\nTip\n\n\n\nWhen you add or update a dependency, run renv::snapshot() to update the lockfile and commit it."
+  },
+  {
+    "objectID": "setup.html#install-your-module-as-an-r-package",
+    "href": "setup.html#install-your-module-as-an-r-package",
+    "title": "2  Setting Up Your Environment",
+    "section": "Install your module as an R package",
+    "text": "Install your module as an R package\nWith renv active, the simplest way is:\nrenv::install(\".\")\nAlternatively, from the terminal:\nR CMD INSTALL . --preclean --no-multiarch --with-keep.source\nNote the library path where the module is installed — you’ll need it for developer mode. Run .libPaths()[1] in R to see it."
+  },
+  {
+    "objectID": "setup.html#sec-dev-mode",
+    "href": "setup.html#sec-dev-mode",
+    "title": "2  Setting Up Your Environment",
+    "section": "Configure JASP for development",
+    "text": "Configure JASP for development\n\nRecommended: renv mode\n\nOpen JASP\nMenu (☰) → Preferences → Advanced\nCheck Developer mode\nCheck Enable renv mode\nSet the libpath where you installed the module\nEnter the module name (as listed in DESCRIPTION)\n\n\n\n\nDeveloper module setup with renv\n\n\n\nGo back to the main JASP window\nClick the + icon (top-right) → Install Developer Module\n\n\n\n\nInstalling the developer module\n\n\n\n\nAlternative: non-renv mode (deprecated)\nThis method lets JASP handle the R installation internally. It ignores lockfiles and can break when CRAN packages update unexpectedly. Not recommended.\n\nIn Preferences → Advanced, uncheck Enable renv mode\nSet the path to your module’s source code directory\n\n\n\n\nNon-renv setup (deprecated)"
+  },
+  {
+    "objectID": "setup.html#sec-pat",
+    "href": "setup.html#sec-pat",
+    "title": "2  Setting Up Your Environment",
+    "section": "GitHub Personal Access Token",
+    "text": "GitHub Personal Access Token\nIf module installation fails with rate-limiting errors:\n\n\n\nInstallation failure due to GitHub rate limiting\n\n\nCreate a GitHub Personal Access Token (no special permissions needed — it just identifies you as a legitimate user).\nIn JASP: Preferences → Advanced → uncheck Use default PAT for Github → paste your token → press Enter/Tab."
+  },
+  {
+    "objectID": "setup.html#sec-dev-cycle",
+    "href": "setup.html#sec-dev-cycle",
+    "title": "2  Setting Up Your Environment",
+    "section": "The development cycle",
+    "text": "The development cycle\n\n\n\n\ngraph LR\n  A[Edit R/QML files] --&gt; B[Recompile module]\n  B --&gt; C[Refresh in JASP]\n  C --&gt; D[Test changes]\n  D --&gt; A\n\n\n\n\n\n\nEdit your R and/or QML files in your editor of choice\nRecompile: R CMD INSTALL . --preclean --no-multiarch --with-keep.source\nRefresh: in JASP, click + → find your module → click the blue refresh button (🔄)\n\nWith renv mode, you must recompile to see changes. Without renv mode (deprecated), some changes are reflected immediately but the install process is more fragile.\n\n\n\n\n\n\nTip\n\n\n\nStart with the QML interface before writing the R analysis. This lets you iterate on the UI quickly and see option names before writing the backend code."
+  },
+  {
+    "objectID": "anatomy.html#file-structure",
+    "href": "anatomy.html#file-structure",
+    "title": "3  Module Anatomy",
+    "section": "3.1 File structure",
+    "text": "3.1 File structure\nmyModule/\n├── DESCRIPTION                # Package metadata and dependencies\n├── NAMESPACE                  # Exported analysis functions\n├── LICENSE\n├── README.md\n├── renv.lock                  # Dependency lockfile (optional)\n├── R/                         # R analysis functions\n│   ├── myAnalysis.R\n│   └── helperFunctions.R\n├── tests/                     # Unit tests (optional but recommended)\n│   └── testthat/\n│       ├── test-myAnalysis.R\n│       └── jaspfiles/         # .jasp files for auto-generated tests\n│           ├── library/\n│           ├── verified/\n│           └── other/\n│\n│  # ── Everything above is a standard R package ──\n│  # ── JASP-specific files below ──\n│\n└── inst/\n    ├── Description.qml        # Module menu configuration\n    ├── Upgrades.qml           # Backward compatibility (optional)\n    ├── qml/                   # Analysis option forms\n    │   ├── MyAnalysis.qml\n    │   └── ...\n    ├── help/                  # Help documentation (optional)\n    │   └── myanalysis.md\n    └── icons/                 # Module and analysis icons (optional)\n        └── myModule.svg\n\n\n\n\ngraph TD\n  R[\"R functions\"] -- imported via --&gt; NAMESPACE\n  NAMESPACE -- called by --&gt; qmls[\"QML files\"]\n  qmls -- create --&gt; Analyses\n  Analyses & help & icons -- coordinated by --&gt; Desc[\"Description.qml\"]\n  Desc -- creates --&gt; Menu[\"Ribbon menu\"]"
+  },
+  {
+    "objectID": "anatomy.html#sec-description-qml",
+    "href": "anatomy.html#sec-description-qml",
+    "title": "3  Module Anatomy",
+    "section": "3.2 Description.qml",
+    "text": "3.2 Description.qml\nThis is the main configuration file that wires your module together. It defines the module’s metadata and lists all analyses.\nimport QtQuick\nimport JASP.Module\n\nDescription\n{\n    title:       \"Amazing Module\"\n    description: \"This module does amazing things.\"\n    version:     \"0.1.0\"\n    author:      \"Your Name\"\n    maintainer:  \"Your Name &lt;you@example.org&gt;\"\n    website:     \"https://example.org\"\n    license:     \"GPL (&gt;= 2)\"\n\n    Analysis\n    {\n        title: \"My Analysis\"\n        qml:   \"MyAnalysis.qml\"\n        func:  \"myAnalysis\"\n    }\n}\n\n3.2.1 Description properties\n\n\n\n\n\n\n\nProperty\nDescription\n\n\n\n\ntitle\nUser-visible name in the ribbon bar\n\n\ndescription\nShown during module installation\n\n\nversion\nModule version (see Chapter 14)\n\n\nicon\nFilename of the ribbon icon (from inst/icons/)\n\n\nrequiresData\nWhether the module needs a dataset (default: true)\n\n\npreloadData\nWhether JASP passes the dataset directly to R functions (default: true, recommended). See Section 5.4\n\n\n\n\n\n3.2.2 Analysis entries\nEach Analysis block maps a menu item to a QML form and an R function:\n\n\n\n\n\n\n\nField\nDescription\n\n\n\n\ntitle\nAnalysis name (shown in output headers)\n\n\nfunc\nR function name — must match an exported function in NAMESPACE\n\n\nqml\nQML filename in inst/qml/. Defaults to func + \".qml\" if omitted\n\n\nmenu\nOptional shorter text for the dropdown menu\n\n\nicon\nOptional analysis-specific icon\n\n\npreloadData\nOptional: override the module-level preloadData for this analysis. Set to false for analyses where column names can’t be inferred from options (e.g., SEM, JAGS)\n\n\n\n\n\n3.2.3 GroupTitle and Separator\nUse GroupTitle and Separator to organise the menu:\nGroupTitle { title: \"Classical\"; icon: \"classical.svg\" }\nAnalysis   { title: \"T-Test\"; func: \"tTest\" }\nSeparator  {}\nGroupTitle { title: \"Bayesian\"; icon: \"bayesian.svg\" }\nAnalysis   { title: \"Bayesian T-Test\"; func: \"tTestBayesian\" }"
+  },
+  {
+    "objectID": "anatomy.html#sec-r-dir",
+    "href": "anatomy.html#sec-r-dir",
+    "title": "3  Module Anatomy",
+    "section": "3.3 R/ directory",
+    "text": "3.3 R/ directory\nPlace your R files here. Each analysis typically has its own file. The main function name must match the func field in Description.qml. See Chapter 5 for the full guide."
+  },
+  {
+    "objectID": "anatomy.html#sec-qml-dir",
+    "href": "anatomy.html#sec-qml-dir",
+    "title": "3  Module Anatomy",
+    "section": "3.4 inst/qml/ directory",
+    "text": "3.4 inst/qml/ directory\nOne QML file per analysis defines the user-facing options panel. The filename should match the qml field in Description.qml. See Chapter 4 for the full guide."
+  },
+  {
+    "objectID": "anatomy.html#sec-help-dir",
+    "href": "anatomy.html#sec-help-dir",
+    "title": "3  Module Anatomy",
+    "section": "3.5 inst/help/ directory",
+    "text": "3.5 inst/help/ directory\nMarkdown help files, one per analysis. The filename must match the analysis function name in lowercase (e.g., myanalysis.md for myAnalysis).\n\nImages: use %HELP_FOLDER%/img/picture.png to reference images within the help folder\nMath: use $...$ for inline and $$...$$ for block LaTeX expressions\nR code: use ```r ``` fenced code blocks"
+  },
+  {
+    "objectID": "anatomy.html#insticons-directory",
+    "href": "anatomy.html#insticons-directory",
+    "title": "3  Module Anatomy",
+    "section": "3.6 inst/icons/ directory",
+    "text": "3.6 inst/icons/ directory\nSVG format preferred (scales well on all displays). PNG/JPG are acceptable but may look poor at some resolutions. Reference icons by filename only (no path) in Description.qml."
+  },
+  {
+    "objectID": "anatomy.html#sec-description-file",
+    "href": "anatomy.html#sec-description-file",
+    "title": "3  Module Anatomy",
+    "section": "3.7 DESCRIPTION file",
+    "text": "3.7 DESCRIPTION file\nStandard R package metadata. JASP uses the Imports field to determine which CRAN packages to install. Example:\nPackage: jaspMyModule\nType: Package\nTitle: My JASP Module\nVersion: 0.1.0\nAuthor: Your Name\nMaintainer: Your Name &lt;you@example.org&gt;\nDescription: Does amazing statistical analyses.\nLicense: GPL (&gt;= 2)\nEncoding: UTF-8\nImports:\n    jaspBase,\n    jaspGraphs,\n    ggplot2"
+  },
+  {
+    "objectID": "anatomy.html#namespace-file",
+    "href": "anatomy.html#namespace-file",
+    "title": "3  Module Anatomy",
+    "section": "3.8 NAMESPACE file",
+    "text": "3.8 NAMESPACE file\nEvery main analysis function must be exported:\nexport(myAnalysis)\nexport(myOtherAnalysis)\nIf you use roxygen2, add #' @export above each main function and run devtools::document()."
+  },
+  {
+    "objectID": "anatomy.html#upgrades.qml",
+    "href": "anatomy.html#upgrades.qml",
+    "title": "3  Module Anatomy",
+    "section": "3.9 Upgrades.qml",
+    "text": "3.9 Upgrades.qml\nOptional file for backward compatibility when you rename or restructure options between versions. See Chapter 13 for details."
+  },
+  {
+    "objectID": "qml-interface.html#sec-qml-input-components",
+    "href": "qml-interface.html#sec-qml-input-components",
+    "title": "4  Designing the QML Interface",
+    "section": "4.1 General input components",
+    "text": "4.1 General input components\n\n4.1.1 CheckBox\nToggle on/off. Nested components are automatically enabled/disabled.\n\n\n\nProperty\nDefault\nDescription\n\n\n\n\nname\n—\nIdentifier used in R\n\n\nlabel\n—\nUser-visible text\n\n\nchecked\nfalse\nDefault state\n\n\nchildrenOnSameRow\nfalse\nPlace children horizontally\n\n\ncolumns\n1\nColumns for nested components\n\n\n\nCheckBox\n{\n    name:    \"homogeneityCorrections\"\n    label:   qsTr(\"Homogeneity corrections\")\n    columns: 3\n    CheckBox { name: \"homogeneityNone\";  label: qsTr(\"None\");           checked: true }\n    CheckBox { name: \"homogeneityBrown\"; label: qsTr(\"Brown-Forsythe\"); checked: true }\n    CheckBox { name: \"homogeneityWelch\"; label: qsTr(\"Welch\");          checked: true }\n}\n\n\n\nNested checkboxes\n\n\n\n\n4.1.2 RadioButtonGroup / RadioButton\nOnly one RadioButton per group can be selected. The group’s name is sent to R with the value of the selected button.\nRadioButtonGroup\n{\n    name:  \"alternative\"\n    title: qsTr(\"Alternative Hypothesis\")\n    RadioButton { value: \"twoSided\"; label: qsTr(\"≠ Test value\"); checked: true }\n    RadioButton { value: \"greater\";  label: qsTr(\"&gt; Test value\") }\n    RadioButton { value: \"less\";     label: qsTr(\"&lt; Test value\") }\n}\n\n\n\nRadio buttons\n\n\n\n\n4.1.3 DropDown\nDropDown\n{\n    name:   \"method\"\n    label:  qsTr(\"Method\")\n    values: [\n        { label: qsTr(\"Pearson\"),  value: \"pearson\"  },\n        { label: qsTr(\"Spearman\"), value: \"spearman\" }\n    ]\n}\nKey properties: source (populate from a variable list), addEmptyValue, startValue.\n\n\n\nDropdown\n\n\n\n\n4.1.4 Numeric fields\n\n\n\nComponent\nPurpose\nKey defaults\n\n\n\n\nDoubleField\nDecimal input\nmin: 0, decimals: 3\n\n\nIntegerField\nInteger input\nmin: 0\n\n\nPercentField\nPercentage\ndefaultValue: 50\n\n\nCIField\nConfidence interval %\ndefaultValue: 95\n\n\n\nDoubleField  { name: \"priorWidth\"; label: qsTr(\"Prior width\"); defaultValue: 0.5; max: 2 }\nIntegerField { name: \"nSamples\";   label: qsTr(\"Samples\");     defaultValue: 10000 }\nCIField      { name: \"ciLevel\";    label: qsTr(\"Confidence interval\") }\n\n\n4.1.5 TextField and FormulaField\nTextField accepts arbitrary text. FormulaField accepts R expressions that evaluate to numbers (e.g., 1/3, pi, sin(30)).\nTextField    { name: \"labelY\"; label: qsTr(\"Y-axis label\"); fieldWidth: 200 }\nFormulaField { name: \"prior\";  label: qsTr(\"Prior\");        defaultValue: \"1/3\" }\n\n\n4.1.6 TextArea\nMulti-line input; press Ctrl+Enter to apply. Set textType for syntax highlighting:\n\nJASP.TextTypeLavaan — lavaan syntax\nJASP.TextTypeRcode — R code\nJASP.TextTypeJAGS — JAGS model"
+  },
+  {
+    "objectID": "qml-interface.html#variable-specification-components",
+    "href": "qml-interface.html#variable-specification-components",
+    "title": "4  Designing the QML Interface",
+    "section": "4.2 Variable specification components",
+    "text": "4.2 Variable specification components\n\n4.2.1 AvailableVariablesList / AssignedVariablesList\nThe core drag-and-drop mechanism. Wrap in a VariablesForm:\nVariablesForm\n{\n    AvailableVariablesList { name: \"allVariables\" }\n    AssignedVariablesList\n    {\n        name:           \"dependent\"\n        label:          qsTr(\"Dependent Variable\")\n        singleVariable: true\n        allowedColumns: [\"scale\"]\n    }\n    AssignedVariablesList\n    {\n        name:           \"fixedFactors\"\n        label:          qsTr(\"Fixed Factors\")\n        allowedColumns: [\"nominal\", \"ordinal\"]\n    }\n}\n\n\n\nVariable assignment\n\n\nKey AssignedVariablesList properties:\n\n\n\n\n\n\n\nProperty\nDescription\n\n\n\n\nsingleVariable\nOnly one variable allowed\n\n\nallowedColumns\nRestrict to [\"scale\"], [\"nominal\", \"ordinal\"], etc.\n\n\nlistViewType\nJASP.Interaction for model terms, JASP.Layers for layers\n\n\nrowComponent\nAdd per-variable controls (checkboxes, dropdowns)\n\n\n\nAssignedVariablesList\n{\n    name:         \"modelTerms\"\n    label:        qsTr(\"Model Terms\")\n    listViewType: JASP.Interaction\n    rowComponent: CheckBox { name: \"isNuisance\"; label: qsTr(\"Nuisance\") }\n}\n\n\n\nInteraction model terms\n\n\n\n\n4.2.2 FactorLevelList\nFor defining factor names and their levels (e.g., Repeated Measures ANOVA):\nFactorLevelList\n{\n    name:       \"repeatedMeasuresFactors\"\n    label:      qsTr(\"Repeated Measures Factors\")\n    factorName: qsTr(\"RM Factor\")\n    minLevels:  2\n}\n\n\n\nFactor level specification"
+  },
+  {
+    "objectID": "qml-interface.html#complex-components",
+    "href": "qml-interface.html#complex-components",
+    "title": "4  Designing the QML Interface",
+    "section": "4.3 Complex components",
+    "text": "4.3 Complex components\n\n4.3.1 ComponentsList\nDynamically add/remove sets of options (e.g., multiple models):\nComponentsList\n{\n    name:       \"models\"\n    label:      qsTr(\"Models\")\n    rowComponent: Group\n    {\n        TextField { name: \"modelName\"; label: qsTr(\"Name\") }\n        TextArea  { name: \"syntax\";    textType: JASP.TextTypeLavaan }\n    }\n}\n\n\n4.3.2 TabView\nMultiple tabs, each containing the same set of controls:\nTabView\n{\n    name:        \"models\"\n    maximumItems: 9\n    newItemName: qsTr(\"Model 1\")\n    content: TextArea { name: \"syntax\"; textType: JASP.TextTypeLavaan }\n}\n\n\n4.3.3 InputListView / TableView\nInputListView — list of user-specified items with per-item controls. TableView — spreadsheet-like grid input.\n\n\n\nInputListView\n\n\n\n\n\nTableView"
+  },
+  {
+    "objectID": "qml-interface.html#grouping-components",
+    "href": "qml-interface.html#grouping-components",
+    "title": "4  Designing the QML Interface",
+    "section": "4.4 Grouping components",
+    "text": "4.4 Grouping components\n\n4.4.1 Group\nVisually groups controls with an optional title:\nGroup\n{\n    title: qsTr(\"Additional Options\")\n    CheckBox { name: \"meanDifference\"; label: qsTr(\"Mean difference\") }\n    CheckBox { name: \"effectSize\";     label: qsTr(\"Effect size\") }\n}\n\n\n\nGroup example\n\n\n\n\n4.4.2 Section\nA collapsible section (accordion):\nSection\n{\n    title: qsTr(\"Assumption Checks\")\n    CheckBox { name: \"normalityTest\"; label: qsTr(\"Normality test\") }\n    CheckBox { name: \"equalityOfVariances\"; label: qsTr(\"Equality of variances\") }\n}\n\n\n\nCollapsible section"
+  },
+  {
+    "objectID": "qml-interface.html#layout",
+    "href": "qml-interface.html#layout",
+    "title": "4  Designing the QML Interface",
+    "section": "4.5 Layout",
+    "text": "4.5 Layout\nUse Layout.columnSpan and Layout.rowSpan to control how components fill the grid:\nVariablesForm\n{\n    AvailableVariablesList { name: \"allVars\" }\n    AssignedVariablesList  { name: \"vars\"; Layout.columnSpan: 2 }\n}"
+  },
+  {
+    "objectID": "qml-interface.html#sec-info-property",
+    "href": "qml-interface.html#sec-info-property",
+    "title": "4  Designing the QML Interface",
+    "section": "4.6 The info property",
+    "text": "4.6 The info property\nEvery component accepts an info property used to auto-generate help documentation:\nCheckBox\n{\n    name:  \"descriptives\"\n    label: qsTr(\"Descriptives\")\n    info:  qsTr(\"When checked, displays a table of descriptive statistics.\")\n}\nWrap info text in qsTr() to make help translatable."
+  },
+  {
+    "objectID": "qml-interface.html#complete-example",
+    "href": "qml-interface.html#complete-example",
+    "title": "4  Designing the QML Interface",
+    "section": "4.7 Complete example",
+    "text": "4.7 Complete example\nimport QtQuick\nimport JASP\nimport JASP.Controls\n\nForm\n{\n    VariablesForm\n    {\n        AvailableVariablesList { name: \"allVariablesList\" }\n        AssignedVariablesList  { name: \"variables\"; label: qsTr(\"Variables\"); allowedColumns: [\"scale\"] }\n        AssignedVariablesList  { name: \"groupingVariable\"; label: qsTr(\"Grouping Variable\"); singleVariable: true; allowedColumns: [\"nominal\"] }\n    }\n\n    Section\n    {\n        title: qsTr(\"Additional Statistics\")\n        Group\n        {\n            title: qsTr(\"Location\")\n            CheckBox { name: \"meanDifference\";           label: qsTr(\"Mean difference\") }\n            CheckBox { name: \"meanDiffConfidenceInterval\"; label: qsTr(\"Confidence interval\"); childrenOnSameRow: true\n                CIField  { name: \"meanDiffCiLevel\" }\n            }\n            CheckBox { name: \"effectSize\"; label: qsTr(\"Effect size\") }\n        }\n    }\n\n    Section\n    {\n        title: qsTr(\"Assumption Checks\")\n        CheckBox { name: \"normalityTest\"; label: qsTr(\"Normality\") }\n        CheckBox { name: \"equalityOfVariancesTest\"; label: qsTr(\"Equality of variances\") }\n    }\n}\n\n\n\nComplete form example"
+  },
+  {
+    "objectID": "r-backend.html#sec-jaspresults",
+    "href": "r-backend.html#sec-jaspresults",
+    "title": "5  Writing the R Backend",
+    "section": "5.1 Understanding jaspResults",
+    "text": "5.1 Understanding jaspResults\nThe central concept in JASP’s R API is jaspResults — a persistent, named container that lives for the entire lifetime of an analysis. Think of it as a big box you can throw things into and pull things out of at any point:\n\nTables (createJaspTable)\nPlots (createJaspPlot)\nContainers (createJaspContainer) — grouping boxes that hold other tables/plots\nState (createJaspState) — cached R objects (models, intermediate results)\nHTML (createJaspHtml) — free-form text output\n\nYou store items by assigning them to named slots: jaspResults[[\"myTable\"]] &lt;- table. You retrieve them the same way: jaspResults[[\"myTable\"]]. If a slot is NULL, the item hasn’t been created yet.\n\n5.1.1 Why this matters\nIn a traditional R script you’d pass individual objects between functions — the model object to the table function, then to the plot function, etc. In JASP, every function just receives jaspResults and can reach into it for whatever it needs. This eliminates the need to pass around dozens of objects:\n\n\n\n\n\nflowchart TD\n    Main[\"Main function\"] --&gt;|\"stores table\"| JR[\"jaspResults\"]\n    Main --&gt;|\"stores state\"| JR\n    TableFn[\".fillTable()\"] --&gt;|\"reads state\"| JR\n    PlotFn[\".fillPlot()\"] --&gt;|\"reads state\"| JR\n    TableFn --&gt;|\"fills table\"| JR\n    PlotFn --&gt;|\"fills plot\"| JR\n\n\n\n\n\n\n\n5.1.2 Automatic caching\nEvery item in jaspResults declares which options it depends on (via $dependOn()). When the user changes an option in the GUI:\n\nItems that depend on the changed option are automatically invalidated and recreated\nItems that don’t depend on it are kept as-is — no recomputation\n\nThis is why every output function starts with if (!is.null(jaspResults[[\"myTable\"]])) return() — if the table already exists and its dependencies haven’t changed, skip it entirely.\n\n\n5.1.3 Real-world example: Independent Samples T-Test\nHere’s how the actual JASP t-test module uses jaspResults (simplified from the source):\nTTestIndependentSamples &lt;- function(jaspResults, dataset, options) {\n  ready &lt;- length(options[[\"dependent\"]]) &gt; 0 && options[[\"group\"]] != \"\"\n\n  if (ready) {\n    dataset &lt;- .ttestReadData(dataset, options, \"independent\")\n    .ttestCheckErrors(dataset, options, \"independent\")\n  }\n\n  # Each function reaches into jaspResults for what it needs\n  .ttestMainTable(      jaspResults, dataset, options, ready)\n  .ttestNormalTable(    jaspResults, dataset, options, ready)\n  .ttestQQPlot(         jaspResults, dataset, options, ready)\n  .ttestDescriptives(   jaspResults, dataset, options, ready)\n  .ttestDescriptivePlot(jaspResults, dataset, options, ready)\n\n  return()\n}\nNotice: no return values are passed between functions. Every function writes to and reads from jaspResults. If the user only toggles the “Descriptives” checkbox, only .ttestDescriptives() and .ttestDescriptivePlot() re-run — the main table is still cached."
+  },
+  {
+    "objectID": "r-backend.html#sec-main-function",
+    "href": "r-backend.html#sec-main-function",
+    "title": "5  Writing the R Backend",
+    "section": "5.2 The analysis function pattern",
+    "text": "5.2 The analysis function pattern\nEvery JASP analysis follows the same structure. The main function name must match the func field in Description.qml (case-sensitive). It always receives three arguments:\nMyAnalysis &lt;- function(jaspResults, dataset, options) {\n  # 1. Check if we can compute results\n  ready &lt;- length(options[[\"variables\"]]) &gt; 0\n\n  # 2. Read data and check for errors\n  if (ready) {\n    dataset &lt;- .myReadData(dataset, options)\n    .myCheckErrors(dataset, options)\n  }\n\n  # 3. Create outputs (tables, plots)\n  .myMainTable(jaspResults, dataset, options, ready)\n  .myMainPlot(jaspResults, dataset, options, ready)\n\n  return()\n}\n\n\n\n\n\n\n\nArgument\nDescription\n\n\n\n\njaspResults\nThe persistent results container — store all tables, plots, state, and containers here\n\n\ndataset\nThe dataset, preloaded by JASP when preloadData: true (the default and recommended setting). NULL if preloadData: false\n\n\noptions\nNamed list of user selections from the QML form\n\n\n\n\n\n\n\n\n\nImportant\n\n\n\nAlways access options with double brackets: options[[\"myOption\"]]. Single brackets or $ allow partial matching which can cause subtle bugs."
+  },
+  {
+    "objectID": "r-backend.html#step-2-check-if-results-can-be-computed",
+    "href": "r-backend.html#step-2-check-if-results-can-be-computed",
+    "title": "5  Writing the R Backend",
+    "section": "5.3 Step 2: Check if results can be computed",
+    "text": "5.3 Step 2: Check if results can be computed\nMost analyses need minimum input before computing. Determine this early:\nready &lt;- length(options[[\"variables\"]]) &gt; 0\nWhen ready is FALSE, your output functions should still create tables and plots (showing dots/empty placeholders) but skip the computation step.\n\n\n\n\nflowchart LR\n  A([\"Start\"]) --&gt; Decision{\"Input sufficient?\"}\n  Decision -- yes --&gt; B[\"Compute & display results\"]\n  Decision -- \"not yet\" --&gt; C[\"Show empty placeholders\"]"
+  },
+  {
+    "objectID": "r-backend.html#sec-preload-data",
+    "href": "r-backend.html#sec-preload-data",
+    "title": "5  Writing the R Backend",
+    "section": "5.4 Step 3: Read the dataset",
+    "text": "5.4 Step 3: Read the dataset\n\n5.4.1 preloadData — the preferred approach\nWith preloadData: true (the default in Description.qml), JASP passes the dataset directly to your R function via the dataset argument. This is the preferred way to handle data in JASP. Columns are automatically converted to the types requested by QML components — if an AssignedVariablesList has allowedColumns: [\"scale\"], those columns arrive in R as numeric.\nBecause the data is already loaded, your “read data” helper typically just does any necessary subsetting or listwise deletion:\n.myReadData &lt;- function(dataset, options) {\n  # For listwise deletion (replaces the old exclude.na.listwise argument):\n  exclude &lt;- unlist(options[[\"variables\"]])\n  dataset &lt;- jaspBase::excludeNaListwise(dataset, exclude)\n  return(dataset)\n}\n\n\n\n\n\n\nNote\n\n\n\npreloadData: true replaces the legacy readDataSetToEnd() / .readDataSetToEnd() functions. You no longer need to call these — the data arrives ready to use.\n\n\n\n\n5.4.2 When to disable preloading\nFor some analyses it’s not yet possible to use preloaded data, because JASP cannot infer which column names appear in the options (e.g., JAGS, SEM where variable names are embedded in syntax strings). Disable preloading per-analysis in Description.qml:\nAnalysis\n{\n    title:         qsTr(\"Structural Equation Modeling\")\n    func:          \"SEM\"\n    preloadData:   false\n}\nWhen preloadData: false, the dataset argument is NULL and you must read data manually.\n\n\n5.4.3 Handling analyses that previously read data multiple times\nIf your analysis previously called readDataSetToEnd() multiple times (e.g., reading a layout variable separately from the main dataset), the preloaded dataset now contains all requested columns in a single data frame. You need to split or subset it yourself:\n# Remove layout columns before passing to the analysis package\ndataset[layoutVariables] &lt;- list(NULL)\n\n# Or split into two data frames\nmainData   &lt;- dataset[, mainVariables]\nlayoutData &lt;- dataset[, layoutVariables]\n\n\n5.4.4 Column encoding\nColumn names are encoded (e.g., JaspColumn_.1._Encoded) to handle special characters. The values in options are also encoded, so you can subset directly:\ndataset[, options[[\"variables\"]]]\nWhen displaying column names to users (e.g., as axis tick labels in plots), decode them:\njaspBase::decodeColNames(\"JaspColumn_.1._Encoded\")  # returns original name\n\n\n\n\n\n\nTip\n\n\n\nOnly decode at the last moment before display. Keep names encoded internally for reliable matching."
+  },
+  {
+    "objectID": "r-backend.html#sec-error-checking",
+    "href": "r-backend.html#sec-error-checking",
+    "title": "5  Writing the R Backend",
+    "section": "5.5 Step 4: Check for errors",
+    "text": "5.5 Step 4: Check for errors\nEven with sufficient input, data may contain problems. Use .hasErrors() for common checks:\n.hasErrors(dataset,\n  type                 = c(\"observations\", \"variance\", \"infinity\"),\n  all.target           = options[[\"variables\"]],\n  observations.amount  = \"&lt; 3\",\n  exitAnalysisIfErrors = TRUE\n)\n\n5.5.1 Available error checks\n\n\n\n\n\n\n\n\nCheck\nWhat it does\nKey argument\n\n\n\n\ninfinity\nInfinite values in variables\ntarget, grouping\n\n\nnegativeValues\nNegative values\ntarget\n\n\nmissingValues\nMissing values (NA)\ntarget\n\n\nobservations\nCount of observations vs threshold\namount (e.g., \"&lt; 2\")\n\n\nvariance\nZero or specific variance\nequalTo (default: 0)\n\n\nfactorLevels\nNumber of factor levels\namount (e.g., \"&lt; 2\")\n\n\nlimits\nValue within min/max bounds\nmin, max\n\n\n\nPrefix arguments with the check name: observations.amount, variance.target, etc. Use all. prefix to apply to all checks: all.target = options[[\"variables\"]]."
+  },
+  {
+    "objectID": "r-backend.html#sec-create-output",
+    "href": "r-backend.html#sec-create-output",
+    "title": "5  Writing the R Backend",
+    "section": "5.6 Step 5: Create output",
+    "text": "5.6 Step 5: Create output\n\n5.6.1 Tables\nTables are the most common output. The lifecycle:\n\nCheck cache — if jaspResults[[\"myTable\"]] exists, skip creation\nCreate — createJaspTable(title = \"My Results\")\nSet dependencies — $dependOn(c(\"opt1\", \"opt2\"))\nDefine columns — $addColumnInfo(name, title, type)\nAttach to output — jaspResults[[\"myTable\"]] &lt;- table\nFill with data — $addRows(list(...))\n\n.myMainTable &lt;- function(jaspResults, dataset, options, ready) {\n  # Skip if already computed and cached\n  if (!is.null(jaspResults[[\"myTable\"]])) return()\n\n  # Create and configure\n  table &lt;- createJaspTable(title = gettext(\"My Results\"))\n  table$dependOn(c(\"variables\", \"ciLevel\"))\n\n  # Define columns\n  table$addColumnInfo(name = \"variable\", title = gettext(\"Variable\"), type = \"string\")\n  table$addColumnInfo(name = \"mean\",     title = gettext(\"Mean\"),     type = \"number\")\n  table$addColumnInfo(name = \"p\",        title = \"p\",                 type = \"pvalue\")\n\n  # Attach to jaspResults (displays immediately, even if empty)\n  jaspResults[[\"myTable\"]] &lt;- table\n\n  if (!ready) return()\n\n  # Fill with results\n  for (variable in options[[\"variables\"]]) {\n    results &lt;- t.test(dataset[[variable]])\n    table$addRows(list(\n      variable = variable,\n      mean     = results$estimate,\n      p        = results$p.value\n    ))\n  }\n}\n\n5.6.1.1 Column types\n\n\n\nType\nDescription\nFormat options\n\n\n\n\nstring\nText\n—\n\n\nnumber\nDecimal number\nsf:4, dp:3, pc (percentage)\n\n\ninteger\nWhole number\n—\n\n\npvalue\np-value with smart formatting\n—\n\n\n\n\n\n5.6.1.2 Footnotes\ntable$addFootnote(message = gettext(\"Some note about the table.\"))\n# Target specific cells:\ntable$addFootnote(message = \"...\", colNames = \"p\", rowNames = \"var1\")\n\n\n5.6.1.3 Reporting errors on tables\nUse try() + $setError() to handle computation failures gracefully:\nresult &lt;- try(someComputation())\nif (inherits(result, \"try-error\")) {\n  table$setError(as.character(result))\n  return()\n}\n\n\n\n5.6.2 Plots\nPlots follow the same pattern. JASP only supports ggplot2.\n.myMainPlot &lt;- function(jaspResults, dataset, options, ready) {\n  if (!is.null(jaspResults[[\"myPlot\"]])) return()\n\n  plot &lt;- createJaspPlot(title = gettext(\"My Plot\"), width = 480, height = 320)\n  plot$dependOn(c(\"variables\", \"plotOption\"))\n  jaspResults[[\"myPlot\"]] &lt;- plot\n\n  if (!ready) return()\n\n  p &lt;- ggplot2::ggplot(dataset, ggplot2::aes(x = .data[[options[[\"variables\"]][1]]]])) +\n    ggplot2::geom_histogram()\n  plot$plotObject &lt;- p\n}\n\n\n5.6.3 Text (HTML) output\nhtmlOutput &lt;- createJaspHtml(text = gettextf(\"Variable %s was excluded.\", varName))\nhtmlOutput$dependOn(\"variables\")\njaspResults[[\"myText\"]] &lt;- htmlOutput\nHTML tags (&lt;b&gt;, &lt;i&gt;) can be used for formatting."
+  },
+  {
+    "objectID": "r-backend.html#sec-containers",
+    "href": "r-backend.html#sec-containers",
+    "title": "5  Writing the R Backend",
+    "section": "5.7 Containers: grouping output elements",
+    "text": "5.7 Containers: grouping output elements\nContainers group related tables and plots visually and functionally. Dependencies set on a container are inherited by all its contents.\ncontainer &lt;- createJaspContainer(title = gettext(\"Descriptive Plots\"))\ncontainer$dependOn(c(\"variables\", \"plotDescriptives\"))\njaspResults[[\"descContainer\"]] &lt;- container\n\nfor (variable in options[[\"variables\"]]) {\n  if (!is.null(container[[variable]])) next  # skip if cached\n\n  plot &lt;- createJaspPlot(title = variable, width = 480, height = 320)\n  plot$dependOn(optionContainsValue = list(variables = variable))\n  container[[variable]] &lt;- plot\n\n  # ... fill plot ...\n}\n\n\n\nVisual grouping example\n\n\nSetting an error on a container propagates to all its contents:\ncontainer$setError(gettext(\"Something went wrong.\"))\nif (container$getError()) return()"
+  },
+  {
+    "objectID": "r-backend.html#sec-state",
+    "href": "r-backend.html#sec-state",
+    "title": "5  Writing the R Backend",
+    "section": "5.8 State: caching computed results",
+    "text": "5.8 State: caching computed results\nWhen multiple output elements (tables, plots, assumption checks) share the same expensive computation, you don’t want to run it separately for each. Use createJaspState() to store any R object in jaspResults and retrieve it later:\n.myComputeResults &lt;- function(jaspResults, dataset, options) {\n  # Already cached? Return immediately.\n  if (!is.null(jaspResults[[\"myState\"]]))\n    return(jaspResults[[\"myState\"]]$object)\n\n  # Expensive computation (e.g., fitting a model)\n  results &lt;- list(model = lm(y ~ x, data = dataset))\n\n  # Store in jaspResults — cached until dependencies change\n  state &lt;- createJaspState(results)\n  state$dependOn(c(\"dependent\", \"covariates\"))\n  jaspResults[[\"myState\"]] &lt;- state\n\n  return(results)\n}\nNow both the table function and the plot function call .myComputeResults(). On the first call, the model is fitted and stored. On the second call, the cached result is returned instantly.\n\n5.8.1 Real-world example: Correlation module\nThe JASP Correlation analysis computes one set of correlation results and reuses them across the main table, assumption checks, scatter plot, and heatmap:\nCorrelationInternal &lt;- function(jaspResults, dataset, options) {\n  ready &lt;- length(options[[\"variables\"]]) &gt;= 2\n\n  if (ready) {\n    dataset &lt;- .corrReadData(dataset, options)\n    .hasErrors(dataset, type = c(\"infinity\", \"variance\", \"observations\"),\n               observations.amount  = \"&lt; 3\",\n               observations.target  = options[[\"variables\"]],\n               exitAnalysisIfErrors = TRUE)\n  }\n\n  # Compute once, reuse everywhere\n  corrResults &lt;- .corrMainResults(jaspResults, dataset, options, ready)\n\n  .corrAssumptions(jaspResults, dataset, options, ready, corrResults)\n  .corrPlot(       jaspResults, dataset, options, ready, corrResults)\n  .corrHeatmap(    jaspResults, options,          ready, corrResults)\n\n  return()\n}\n\n.corrMainResults &lt;- function(jaspResults, dataset, options, ready) {\n  # Return cached results if both the table and state still exist\n  if (!is.null(jaspResults[[\"mainTable\"]]) && !is.null(jaspResults[[\"results\"]]))\n    return(jaspResults[[\"results\"]]$object)\n\n  mainTable &lt;- .corrInitMainTable(jaspResults, options)\n\n  corrResults &lt;- .corrComputeResults(jaspResults, dataset, options, ready)\n\n  .corrFillTableMain(mainTable, corrResults, options, ready)\n\n  return(corrResults)\n}\nThe pattern: .corrMainResults() either returns the cached state or computes fresh results. Either way, it returns the same object, and every downstream function uses it without caring whether it was cached or freshly computed.\n\n\n5.8.2 What can you store in state?\nAnything — model objects, matrices, lists of results, data frames. The only constraint is that the object must be serialisable (which almost everything in R is). Common patterns:\n\n\n\n\n\n\n\nWhat to cache\nWhy\n\n\n\n\nFitted model (lm, aov, etc.)\nAvoids refitting when the user toggles a plot checkbox\n\n\nCorrelation/test-statistic matrix\nShared between main table, assumption table, and plot\n\n\nBootstrap samples\nExpensive to generate; reused for CIs and plots\n\n\nPreprocessed dataset\nWhen cleaning/transforming is slow"
+  },
+  {
+    "objectID": "qml-r-connection.html#the-reactive-loop",
+    "href": "qml-r-connection.html#the-reactive-loop",
+    "title": "6  Connecting QML to R",
+    "section": "6.1 The reactive loop",
+    "text": "6.1 The reactive loop\nJASP implements a reactive loop between the interface and the analysis engine:\n\n\n\n\n\nsequenceDiagram\n    participant User\n    participant QML as QML Form\n    participant Desktop as JASP Desktop\n    participant Engine as R Engine\n\n    User-&gt;&gt;QML: Changes an option\n    QML-&gt;&gt;Desktop: Updated options object\n    Desktop-&gt;&gt;Engine: Calls R function with (jaspResults, dataset, options)\n    Engine-&gt;&gt;Desktop: Updated jaspResults (tables, plots, state)\n    Desktop-&gt;&gt;User: Renders output\n\n\n\n\n\nEvery time a user changes any option, JASP re-invokes the R analysis function with the full, updated options list. The jaspResults caching mechanism prevents redundant computation — only outputs whose dependencies changed are recomputed."
+  },
+  {
+    "objectID": "qml-r-connection.html#how-components-map-to-r-options",
+    "href": "qml-r-connection.html#how-components-map-to-r-options",
+    "title": "6  Connecting QML to R",
+    "section": "6.2 How components map to R options",
+    "text": "6.2 How components map to R options\nEach QML component with a name property becomes a key in the options list passed to R:\n\n\n\n\n\n\n\nQML\nR\n\n\n\n\nCheckBox { name: \"descriptives\" }\noptions[[\"descriptives\"]] → TRUE/FALSE\n\n\nRadioButtonGroup { name: \"alternative\" } with RadioButton { value: \"greater\" }\noptions[[\"alternative\"]] → \"greater\"\n\n\nDoubleField { name: \"ciLevel\"; defaultValue: 0.95 }\noptions[[\"ciLevel\"]] → 0.95\n\n\nAssignedVariablesList { name: \"variables\" }\noptions[[\"variables\"]] → character vector\n\n\nAssignedVariablesList { name: \"dependent\"; singleVariable: true }\noptions[[\"dependent\"]] → single string\n\n\nTextField { name: \"title\" }\noptions[[\"title\"]] → string\n\n\nDropDown { name: \"method\" }\noptions[[\"method\"]] → selected value string"
+  },
+  {
+    "objectID": "qml-r-connection.html#the-wiring-description.qml-qml-r",
+    "href": "qml-r-connection.html#the-wiring-description.qml-qml-r",
+    "title": "6  Connecting QML to R",
+    "section": "6.3 The wiring: Description.qml → QML → R",
+    "text": "6.3 The wiring: Description.qml → QML → R\nDescription.qml ties everything together:\n// inst/Description.qml\nAnalysis\n{\n    title: \"My T-Test\"\n    func:  \"myTTest\"       // ← must match R function name (exported in NAMESPACE)\n    qml:   \"MyTTest.qml\"   // ← must match file in inst/qml/\n}\ninst/Description.qml  ──→  inst/qml/MyTTest.qml  ──→  R/myTTest.R\n     (menu entry)              (options form)          (analysis function)\nWhen a user clicks the analysis in the menu:\n\nJASP loads inst/qml/MyTTest.qml and displays the form\nUser configures options\nJASP calls myTTest(jaspResults, dataset, options) in R\nThe R function reads options, computes, and populates jaspResults"
+  },
+  {
+    "objectID": "qml-r-connection.html#option-name-consistency",
+    "href": "qml-r-connection.html#option-name-consistency",
+    "title": "6  Connecting QML to R",
+    "section": "6.4 Option name consistency",
+    "text": "6.4 Option name consistency\nThe name in QML must exactly match what you access in R. This is the single source of truth:\n// QML\nCheckBox { name: \"meanDifference\"; label: qsTr(\"Mean difference\") }\nCIField  { name: \"meanDifferenceCiLevel\" }\n# R\nif (options[[\"meanDifference\"]]) {\n  ciLevel &lt;- options[[\"meanDifferenceCiLevel\"]]\n  # ...\n}\nSee Chapter 8 for naming conventions."
+  },
+  {
+    "objectID": "qml-r-connection.html#dependencies-and-caching",
+    "href": "qml-r-connection.html#dependencies-and-caching",
+    "title": "6  Connecting QML to R",
+    "section": "6.5 Dependencies and caching",
+    "text": "6.5 Dependencies and caching\nThe $dependOn() calls in R reference option names from QML. When a listed option changes, the associated output element is invalidated and recomputed:\ntable$dependOn(c(\"variables\", \"ciLevel\", \"alternative\"))\nThis means: rebuild this table whenever variables, ciLevel, or alternative changes in the QML form.\nDependencies can also be set on containers (inherited by all children) and with optionContainsValue for per-value granularity:\n# Only invalidate this plot if \"age\" is removed from the variables list\nplot$dependOn(optionContainsValue = list(variables = \"age\"))"
+  },
+  {
+    "objectID": "qml-r-connection.html#sec-dataset-preload",
+    "href": "qml-r-connection.html#sec-dataset-preload",
+    "title": "6  Connecting QML to R",
+    "section": "6.6 The dataset",
+    "text": "6.6 The dataset\nBy default (preloadData: true in Description.qml), JASP preloads the dataset and passes it to your R function via the dataset argument. This is the preferred way to handle data. Columns are automatically converted to the types requested by QML components — if an AssignedVariablesList has allowedColumns: [\"scale\"], those columns arrive in R as numeric.\nThis replaces the legacy readDataSetToEnd() approach. Where you previously did listwise deletion during read:\n# Old approach (no longer recommended):\ndataset &lt;- readDataSetToEnd(columns = ..., exclude.na.listwise = exclude)\nYou now use:\n# New approach with preloadData:\ndataset &lt;- jaspBase::excludeNaListwise(dataset, exclude)\nTo disable preloading for analyses where JASP cannot infer column names from the options (e.g., SEM, JAGS): set preloadData: false in Description.qml for that specific analysis. Then read data manually in R. See Section 5.4 for full details.\n\n6.6.1 Unit tests with preloaded data\nSince readDataSetToEnd() no longer converts column types, you may need to specify types explicitly in unit tests. There are three ways:\n\nAdd type information to options: if options$variables contains the variables, add options$variables.types to specify the types\nUse jaspTools::addTypedDataSet(): pass a named list like list(var1 = \"scale\", var2 = \"nominal\") — useful when reusing one dataset across many tests\nConvert manually: if passing a dataset directly (not a filename), call as.factor() or as.ordered() yourself before passing it"
+  },
+  {
+    "objectID": "qml-r-connection.html#summary-adding-a-new-analysis",
+    "href": "qml-r-connection.html#summary-adding-a-new-analysis",
+    "title": "6  Connecting QML to R",
+    "section": "6.7 Summary: adding a new analysis",
+    "text": "6.7 Summary: adding a new analysis\n\nAdd an Analysis entry in inst/Description.qml with func and qml\nCreate inst/qml/MyAnalysis.qml with the options form\nCreate R/myAnalysis.R with the analysis function\nExport myAnalysis in NAMESPACE\nRecompile and refresh in JASP"
+  },
+  {
+    "objectID": "jasptools-workflow.html#setup",
+    "href": "jasptools-workflow.html#setup",
+    "title": "7  Running & Debugging with jaspTools",
+    "section": "7.1 Setup",
+    "text": "7.1 Setup\n# Install jaspTools (one-time)\nremotes::install_github(\"jasp-stats/jaspTools\")\nlibrary(jaspTools)\nAfter loading jaspTools, it automatically finds your module if you opened the R session from the module’s root directory (or you can point it manually)."
+  },
+  {
+    "objectID": "jasptools-workflow.html#running-an-analysis-from-r",
+    "href": "jasptools-workflow.html#running-an-analysis-from-r",
+    "title": "7  Running & Debugging with jaspTools",
+    "section": "7.2 Running an Analysis from R",
+    "text": "7.2 Running an Analysis from R\nlibrary(jaspTools)\n\n# Get the default options for your analysis\noptions &lt;- analysisOptions(\"TTestIndependentSamples\")\n\n# Override the options you care about\noptions$dependent         &lt;- \"contNormal\"\noptions$groupingVariable  &lt;- \"facGender\"\noptions$meanDifference    &lt;- TRUE\noptions$effectSize        &lt;- TRUE\n\n# Run the analysis against a test dataset\nresults &lt;- runAnalysis(\"TTestIndependentSamples\", \"test.csv\", options)\nThe results object is a nested list mirroring what JASP renders. You can explore it interactively:\n# Check status\nresults[[\"status\"]]\n\n# Inspect a specific table\nresults[[\"results\"]][[\"ttest\"]][[\"data\"]]\n\n# Check for errors\nresults[[\"results\"]][[\"ttest\"]][[\"error\"]]\nThis is dramatically faster than recompiling, refreshing JASP, and clicking through the UI for every change."
+  },
+  {
+    "objectID": "jasptools-workflow.html#debugging-with-browser",
+    "href": "jasptools-workflow.html#debugging-with-browser",
+    "title": "7  Running & Debugging with jaspTools",
+    "section": "7.3 Debugging with browser()",
+    "text": "7.3 Debugging with browser()\nR’s built-in browser() function is your most powerful debugging tool. Insert it anywhere in your analysis code to pause execution and drop into an interactive debugger:\n.computeResults &lt;- function(jaspResults, dataset, options) {\n  browser()  # Execution pauses here — inspect variables interactively\n\n  model &lt;- lm(as.formula(options[[\"formula\"]]), data = dataset)\n  # ...\n}\nWhen you run the analysis via jaspTools::runAnalysis(), R will pause at the browser() line. You can then:\n\n\n\nCommand\nAction\n\n\n\n\nn\nExecute the next line\n\n\ns\nStep into a function call\n\n\nc\nContinue execution until the next browser() or end\n\n\nQ\nQuit the debugger\n\n\nAny R expression\nEvaluate it in the current scope\n\n\n\n\n7.3.1 Typical Debugging Session\nlibrary(jaspTools)\n\n# 1. Add browser() in your R file where you suspect the issue\n# 2. Reinstall the module:\n#    R CMD INSTALL . --preclean --no-multiarch --with-keep.source\n\n# 3. Run from R console:\noptions &lt;- analysisOptions(\"MyAnalysis\")\noptions$dependent &lt;- \"contNormal\"\nresults &lt;- runAnalysis(\"MyAnalysis\", \"test.csv\", options)\n\n# Execution pauses at browser(). Now you can:\n#   - Type variable names to inspect them\n#   - Run str(dataset) to see the data structure\n#   - Run head(options) to verify option values\n#   - Step through line by line with 'n'\n\n\n\n\n\n\nRemember to Remove browser() Calls\n\n\n\nRemove all browser() calls before committing. They will cause the JASP engine to hang if left in production code."
+  },
+  {
+    "objectID": "jasptools-workflow.html#inspecting-jaspresults-objects",
+    "href": "jasptools-workflow.html#inspecting-jaspresults-objects",
+    "title": "7  Running & Debugging with jaspTools",
+    "section": "7.4 Inspecting jaspResults Objects",
+    "text": "7.4 Inspecting jaspResults Objects\nWhen paused in the debugger, you can inspect jaspResults elements:\n# See what's already in jaspResults\nnames(jaspResults)\n\n# Check if a table exists (caching)\nis.null(jaspResults[[\"myTable\"]])\n\n# Inspect a cached state object\njaspResults[[\"stateResults\"]]$object"
+  },
+  {
+    "objectID": "jasptools-workflow.html#the-full-development-loop",
+    "href": "jasptools-workflow.html#the-full-development-loop",
+    "title": "7  Running & Debugging with jaspTools",
+    "section": "7.5 The Full Development Loop",
+    "text": "7.5 The Full Development Loop\nFor day-to-day R code development, this loop is much faster than working through JASP’s GUI:\n\n\n\n\nflowchart LR\n    A[Edit R code] --&gt; B[R CMD INSTALL .]\n    B --&gt; C[\"runAnalysis() in R console\"]\n    C --&gt; D{Works?}\n    D -- No --&gt; E[\"Add browser(), re-install\"]\n    E --&gt; C\n    D -- Yes --&gt; F[Test in JASP GUI]\n\n\n\n\n\n\nEdit your .R file.\nInstall: R CMD INSTALL . --preclean --no-multiarch --with-keep.source\nRun: jaspTools::runAnalysis(\"MyAnalysis\", \"test.csv\", options) — check the output.\nDebug: if something is wrong, add browser() at the suspect location, reinstall, and re-run.\nVerify in JASP: once the R output looks correct, refresh the module in JASP to check the full UI experience (state caching, plot rendering, error display).\n\nStep 5 is important because some issues — like state caching between option changes, or how containers render in the results panel — only manifest inside JASP itself."
+  },
+  {
+    "objectID": "jasptools-workflow.html#quick-renv-setup-for-jasptools",
+    "href": "jasptools-workflow.html#quick-renv-setup-for-jasptools",
+    "title": "7  Running & Debugging with jaspTools",
+    "section": "7.6 Quick renv Setup for jaspTools",
+    "text": "7.6 Quick renv Setup for jaspTools\nIf your module uses renv (which it should — see Section 2.3), run this bootstrap before using jaspTools:\nSys.setenv(GITHUB_PAT = \"&lt;your PAT&gt;\")\n\nif (is.null(renv::project())) {\n  message(\"This isn't an active renv project.\")\n  renv::activate()\n} else {\n  message(\"We're in an active renv project.\")\n}\n\nmessage(\"Restoring/synchronizing the project library.\")\nrenv::restore()\n\nmessage(\"Installing the package.\")\nrenv::install(\".\")\n\nmessage(\"R libPath for developer mode:\\n\", .libPaths()[1])\nThe last line prints the library path for your installed module. This is the path you enter in JASP’s Preferences → Advanced → Developer mode → libpath so JASP loads your locally built module."
+  },
+  {
+    "objectID": "jasptools-workflow.html#common-pitfalls",
+    "href": "jasptools-workflow.html#common-pitfalls",
+    "title": "7  Running & Debugging with jaspTools",
+    "section": "7.7 Common Pitfalls",
+    "text": "7.7 Common Pitfalls\n\n\n\n\n\n\n\n\nProblem\nCause\nFix\n\n\n\n\nrunAnalysis() returns old results\nModule not reinstalled after editing\nRun R CMD INSTALL . again\n\n\nbrowser() doesn’t trigger\nRunning a cached code path (if (!is.null(...)) return())\nClear jaspResults state or change a dependency option\n\n\nOptions don’t match QML\nTypo in option name\nCompare names(analysisOptions(\"X\")) against your QML name: values\n\n\nError: package 'X' not found\nrenv library not restored\nRun renv::restore() first\n\n\nResults differ from JASP\nDataset encoding differences\nUse the same dataset file; check .readDataSetToEnd() column types"
+  },
+  {
+    "objectID": "coding-standards.html#sec-r-style",
+    "href": "coding-standards.html#sec-r-style",
+    "title": "8  Coding Standards",
+    "section": "8.1 R Style Guide",
+    "text": "8.1 R Style Guide\n\n8.1.1 Naming\n\n\n\nElement\nConvention\nExample\n\n\n\n\nFunctions\ncamelCase, verb + noun\ncomputeMeanDifference()\n\n\nLocal variables\ncamelCase\neffectSize\n\n\nConstants\ncamelCase (same as variables)\nmaxIterations\n\n\nFiles\nanalysisname.R (lowercase)\nttestindependentsamples.R\n\n\n\n\n\n8.1.2 Formatting\n\nIndentation: 2 spaces (no tabs).\nLine length: ≤ 120 characters.\nAssignment: Use &lt;-, not =.\nSpacing: Space after commas, around operators (+, -, &lt;-, ==), but not inside parentheses.\nBraces: Opening { on the same line; closing } on its own line.\nStrings: Use double quotes \" consistently.\n\n# Good\n.computeResults &lt;- function(jaspResults, dataset, options) {\n  if (options[[\"meanDifference\"]])\n    table$addColumnInfo(name = \"meanDiff\", title = gettext(\"Mean Difference\"), type = \"number\")\n}\n\n# Bad\n.computeResults = function( jaspResults,dataset,options ){\n  if(options[['meanDifference']])\n    table$addColumnInfo(name='meanDiff',title=gettext('Mean Difference'),type='number')\n}\n\n\n8.1.3 Functions\n\nInternal (private) helper functions start with a dot: .computeResults().\nThe main entry point (called from QML) is the only public function without a dot.\nAvoid deeply nested if/else chains — use early returns or helper functions.\nUse options[[\"optionName\"]] (double brackets), never options$optionName.\n\n\n\n8.1.4 Comments\n\nUse # followed by a space.\nComment why, not what — the code itself should show what it does."
+  },
+  {
+    "objectID": "coding-standards.html#sec-qml-style",
+    "href": "coding-standards.html#sec-qml-style",
+    "title": "8  Coding Standards",
+    "section": "8.2 QML Style Guide",
+    "text": "8.2 QML Style Guide\n\n8.2.1 Formatting\n\nIndentation: Tabs (4-space width).\nBraces: Opening { on its own line, vertically aligned with the closing }.\n\n// Good\nGroup\n{\n    title: qsTr(\"Options\")\n    CheckBox { name: \"meanDifference\"; label: qsTr(\"Mean difference\") }\n\n    IntegerField\n    {\n        name:         \"ciWidth\"\n        label:        qsTr(\"Confidence interval\")\n        defaultValue: 95\n        min:          50\n        max:          99\n    }\n}\n\n\n8.2.2 Property Alignment\nWhen a QML element has multiple properties, align property values vertically:\nIntegerField\n{\n    name:         \"bootstrapSamples\"\n    label:        qsTr(\"Bootstrap samples\")\n    defaultValue: 1000\n    min:          100\n    max:          1000000\n}\n\n\n8.2.3 One-liner Elements\nSimple elements with 1–3 short properties may go on a single line:\nCheckBox { name: \"meanDifference\"; label: qsTr(\"Mean difference\") }\nCheckBox { name: \"effectSize\";     label: qsTr(\"Effect size\")     }\nWhen stacking one-liners, align property values across lines for readability.\n\n\n8.2.4 Strings\nWrap all user-visible strings in qsTr() for translation (see Chapter 12)."
+  },
+  {
+    "objectID": "coding-standards.html#sec-option-names",
+    "href": "coding-standards.html#sec-option-names",
+    "title": "8  Coding Standards",
+    "section": "8.3 Option Naming Conventions",
+    "text": "8.3 Option Naming Conventions\nOption names appear in QML (name: property), flow to R via options[[\"name\"]], and persist in .jasp files. Consistent naming is essential for long-term compatibility.\n\n8.3.1 Rules\n\ncamelCase — no underscores, no dots, no kebab-case.\nSingular nouns — confidenceInterval, not confidenceIntervals.\nAbbreviations are words — capitalise only the first letter: Ci, not CI; Bf, not BF; Mcmc, not MCMC.\nBe specific but concise — descriptivesTableCi rather than ci when ambiguous.\nBoolean options — name describes the thing being toggled, not the action: meanDifference (not showMeanDifference).\n\n\n\n8.3.2 Common Standardised Names\nUse these names wherever the concept applies — do not invent synonyms:\n\n\n\nConcept\nStandard Name\n\n\n\n\nConfidence interval width\nciWidth\n\n\nCredible interval width\ncredibleIntervalWidth\n\n\nDescriptives table\ndescriptivesTable\n\n\nEffect size\neffectSize\n\n\nBayes factor direction\nbayesFactorType\n\n\nMissing values handling\nmissingValues\n\n\nSample sizes\nsampleSize\n\n\nBootstrap samples\nbootstrapSamples\n\n\n\nSee Appendix C for the full reference table.\n\n\n8.3.3 Variable List Names\nFor AssignedVariablesList, name after the statistical role:\n\n\n\nRole\nName\n\n\n\n\nDependent variable\ndependent\n\n\nIndependent / fixed factors\nfixedFactors\n\n\nRandom factors\nrandomFactors\n\n\nCovariates\ncovariates\n\n\nGrouping variable\ngroupingVariable\n\n\nRepeated measures\nrepeatedMeasuresFactors\n\n\nWeights\nweights"
+  },
+  {
+    "objectID": "coding-standards.html#applying-standards-in-practice",
+    "href": "coding-standards.html#applying-standards-in-practice",
+    "title": "8  Coding Standards",
+    "section": "8.4 Applying Standards in Practice",
+    "text": "8.4 Applying Standards in Practice\nA practical workflow:\n\nBefore writing code: scan Appendix C for existing names that match your options.\nDuring development: run a quick check — do your names follow camelCase, use singular nouns, and spell abbreviations as words?\nDuring review: compare against this chapter. Reviewers will flag deviations.\nWhen renaming: if an option name must change after release, provide an Upgrades.qml entry (see Chapter 13)."
+  },
+  {
+    "objectID": "errors-ux.html#design-philosophy",
+    "href": "errors-ux.html#design-philosophy",
+    "title": "9  Error Messages & User Experience",
+    "section": "9.1 Design Philosophy",
+    "text": "9.1 Design Philosophy\nThree principles from the JASP Human Guide:\n\nBe proactive, not reactive — check assumptions and warn before producing misleading results.\nWrite for humans — error messages should explain what went wrong and suggest a fix, not dump a stack trace.\nBe consistent — use the standardised error messages below so users learn to recognise common patterns."
+  },
+  {
+    "objectID": "errors-ux.html#types-of-messages",
+    "href": "errors-ux.html#types-of-messages",
+    "title": "9  Error Messages & User Experience",
+    "section": "9.2 Types of Messages",
+    "text": "9.2 Types of Messages\n\n\n\n\n\n\n\n\nType\nWhere it appears\nPurpose\n\n\n\n\nAnalysis error\nRed banner above results\nUnrecoverable problem — analysis cannot produce output\n\n\nFootnote\nBelow a table\nWarning or caveat about specific results\n\n\nValue error\nInline in a table cell\nA specific cell could not be computed\n\n\n\n\n9.2.1 Setting an Analysis Error\ntable &lt;- createJaspTable(title = \"Results\")\ntable$setError(\"The dependent variable contains only missing values.\")\nThe error is attached to a specific output element (table, plot, or container). If attached to a container, all child elements inherit the error state.\n\n\n9.2.2 Adding Footnotes\ntable$addFootnote(\n  message = gettext(\"Levene's test is significant (p &lt; .05), suggesting a violation of the equal variances assumption.\"),\n  colNames = \"p\",\n  rowNames = \"levene\"\n)\n\n\n9.2.3 .hasErrors() — Validate Before Computing\nCall .hasErrors() on your dataset to check common problems before attempting computation:\n.hasErrors(dataset,\n  type = c(\"infinity\", \"observations\", \"variance\"),\n  observations.amount = \"&lt; 2\",\n  exitAnalysisIfErrors = TRUE\n)\nAvailable check types:\n\n\n\n\n\n\n\nType\nWhat it checks\n\n\n\n\ninfinity\nInfinite values in the data\n\n\nobservations\nToo few observations (specify observations.amount)\n\n\nvariance\nZero variance in a variable\n\n\nfactorLevels\nToo few factor levels (specify factorLevels.amount)\n\n\nnegativeValues\nNegative values where not expected\n\n\nintegerValues\nNon-integer values where integers are required\n\n\nduplicateValues\nDuplicate values in a variable\n\n\n\nWhen exitAnalysisIfErrors = TRUE, the error is set automatically and the analysis stops cleanly."
+  },
+  {
+    "objectID": "errors-ux.html#standardised-error-messages",
+    "href": "errors-ux.html#standardised-error-messages",
+    "title": "9  Error Messages & User Experience",
+    "section": "9.3 Standardised Error Messages",
+    "text": "9.3 Standardised Error Messages\nUse these exact phrasings when the situation matches. This ensures consistency across all JASP modules and simplifies translation.\n\n9.3.1 Not Enough Observations\n\n“Not enough observations. The analysis requires at least N observations.”\n\n\n\n9.3.2 Not Enough Factor Levels\n\n“The factor ‘variable’ has fewer than 2 levels after removing empty levels.”\n\n\n\n9.3.3 Zero Variance\n\n“The variable ‘variable’ has zero variance. The analysis cannot proceed.”\n\n\n\n9.3.4 Infinite Values\n\n“The variable ‘variable’ contains infinite values.”\n\n\n\n9.3.5 Singular Matrix / Convergence Failures\n\n“The model could not be estimated. The design matrix is (near-)singular.”\n\n\n“The model did not converge within N iterations.”\n\n\n\n9.3.6 Bayesian-Specific\n\n“The Bayes factor could not be computed. This may be due to a singular design matrix.”\n\n\n“The posterior samples could not be obtained. Consider increasing the number of MCMC samples.”\n\nSee Appendix D for the full error message catalogue organized by analysis type."
+  },
+  {
+    "objectID": "errors-ux.html#assumption-checking",
+    "href": "errors-ux.html#assumption-checking",
+    "title": "9  Error Messages & User Experience",
+    "section": "9.4 Assumption Checking",
+    "text": "9.4 Assumption Checking\nJASP analyses should check assumptions and report violations as footnotes:\nif (leveneResult$p &lt; 0.05) {\n  table$addFootnote(\n    message = gettext(\"Levene's test is significant (p &lt; .05), suggesting a violation of the equal variances assumption.\")\n  )\n}\n\n9.4.1 Where to Validate\nValidate at system boundaries only:\n\n\n\n\n\n\n\nBoundary\nAction\n\n\n\n\nDataset columns\nUse .hasErrors() checks\n\n\nUser text input (TextField, FormulaField)\nValidate in QML via inputType or in R\n\n\nNumeric input (IntegerField, DoubleField)\nUse QML min/max properties\n\n\nQML dropdowns / checkboxes\nNo validation needed — values are constrained by the UI\n\n\n\nDo not add defensive checks for values that cannot occur because the UI prevents them. Trust QML input constraints."
+  },
+  {
+    "objectID": "errors-ux.html#writing-good-error-messages",
+    "href": "errors-ux.html#writing-good-error-messages",
+    "title": "9  Error Messages & User Experience",
+    "section": "9.5 Writing Good Error Messages",
+    "text": "9.5 Writing Good Error Messages\n\n\n\n\n\n\nChecklist\n\n\n\n\nIs the message a complete sentence?\nDoes it say what went wrong?\nDoes it suggest what the user can do?\nIs it wrapped in gettext() or gettextf() for translation?\nDoes it avoid R jargon (e.g., “NULL”, “NA”, “vector”)?\n\n\n\nGood: gettextf(\"The grouping variable '%s' has fewer than 2 levels. Ensure both groups are present in the data.\", groupVar)\nBad: \"Error in grouping variable\" — says nothing about the cause or remedy."
+  },
+  {
+    "objectID": "testing.html#framework",
+    "href": "testing.html#framework",
+    "title": "10  Testing Your Module",
+    "section": "10.1 Framework",
+    "text": "10.1 Framework\nJASP uses testthat through the jaspTools package, which wraps testthat with JASP-specific helpers for running analyses, comparing tables, and validating plots.\n\n10.1.1 Setup\n# Install jaspTools (one-time)\nremotes::install_github(\"jasp-stats/jaspTools\")\nlibrary(jaspTools)\nFor interactive debugging of analyses with jaspTools (including browser()), see Chapter 7."
+  },
+  {
+    "objectID": "testing.html#test-file-structure",
+    "href": "testing.html#test-file-structure",
+    "title": "10  Testing Your Module",
+    "section": "10.2 Test File Structure",
+    "text": "10.2 Test File Structure\ntests/\n├── testthat.R                    # Runner script\n└── testthat/\n    ├── test-analysisname.R       # One file per analysis\n    ├── _snaps/                   # Auto-generated plot snapshots\n    │   └── test-analysisname/\n    │       └── plot-name.svg\n    └── jaspfiles/                # Test data (recommended)\n        ├── library/              # Datasets from the JASP data library\n        ├── verified/             # Verified .jasp example files\n        └── other/                # Additional test data\nTest files follow the pattern: test-{source}-{filename}.R, where {source} indicates the data origin (e.g., test-verified-ttest.R, test-library-BinomialTest.R)."
+  },
+  {
+    "objectID": "testing.html#sec-example-tests",
+    "href": "testing.html#sec-example-tests",
+    "title": "10  Testing Your Module",
+    "section": "10.3 Recommended: Generate Tests from Example Files",
+    "text": "10.3 Recommended: Generate Tests from Example Files\nThe preferred way to create tests is to auto-generate them from .jasp example files. This approach:\n\nEnsures your examples are always tested\nProduces consistent, comprehensive test coverage with minimal effort\nKeeps tests in sync with the actual user-facing examples\n\n\n10.3.1 Step 1: Add .jasp Files\nPlace your example .jasp files in the appropriate subfolder:\n\n\n\n\n\n\n\nFolder\nContents\n\n\n\n\ntests/testthat/jaspfiles/verified/\nFiles from the JASP verification project\n\n\ntests/testthat/jaspfiles/library/\nFiles from the JASP data library\n\n\ntests/testthat/jaspfiles/other/\nOther example files for testing\n\n\n\n\n\n10.3.2 Step 2: Generate Tests\nlibrary(jaspTools)\njaspTools::makeTestsFromExamples(\"jaspTTests\")\nThis reads each .jasp example, extracts the options, runs the analysis, and generates test code. Generated test files are named test-{source}-{filename}.R.\n\n\n10.3.3 Step 3: Review\nAlways eyeball the generated tests. There are edge cases where makeTestsFromExamples() fails due to complex variable encoding (e.g., some SEM syntax, ordinal constraints). Add skip() for those cases:\ntest_that(\"Complex SEM model runs\", {\n  skip(\"Complex variable encoding not yet supported by makeTestsFromExamples\")\n  # ...\n})\n\n\n10.3.4 Step 4: Keep in Sync\nWhen you update an example .jasp file, regenerate the corresponding test. The verified/ folder is protected from accidental overwrites by default.\n\n\n\n\n\n\nMigrate Existing Tests\n\n\n\nIf your module still has the old examples/ folder layout, move your .jasp files into tests/testthat/jaspfiles/, delete the old auto-generated test files, and re-run makeTestsFromExamples(). Make sure you have the latest jaspTools installed."
+  },
+  {
+    "objectID": "testing.html#writing-tests-manually",
+    "href": "testing.html#writing-tests-manually",
+    "title": "10  Testing Your Module",
+    "section": "10.4 Writing Tests Manually",
+    "text": "10.4 Writing Tests Manually\nFor cases not covered by example files — edge cases, specific error conditions, or fine-grained option combinations — write tests manually.\n\n10.4.1 Basic Structure\ntest_that(\"Independent Samples T-Test produces correct table\", {\n  options &lt;- analysisOptions(\"TTestIndependentSamples\")\n  options$dependent  &lt;- \"contNormal\"\n  options$groupingVariable &lt;- \"facGender\"\n  options$effectSize &lt;- TRUE\n\n  results &lt;- runAnalysis(\"TTestIndependentSamples\", \"test.csv\", options)\n\n  table &lt;- results[[\"results\"]][[\"ttest\"]][[\"data\"]]\n  jaspTools::expect_equal_tables(table, list(\n    -0.153, 0.878, \"contNormal\", -0.214, 99, 0.831\n  ))\n})\n\n\n10.4.2 Setting Up Options\nUse analysisOptions() to get an options list pre-populated with defaults:\noptions &lt;- analysisOptions(\"TTestIndependentSamples\")\n# Then override only what you need:\noptions$dependent &lt;- \"contNormal\"\noptions$meanDifference &lt;- TRUE\n\n\n10.4.3 Table Tests\nexpect_equal_tables() compares the analysis output table to a reference list of values:\njaspTools::expect_equal_tables(table, list(\n  \"value1\", \"value2\", \"value3\"  # expected cell values in row order\n))\nTo generate the expected values list automatically:\n# Run the analysis, then:\njaspTools::makeTestTable(table)\n# Prints a list(...) you can paste into your test\nYou can also bootstrap a manual test file by setting makeTests = TRUE:\nresults &lt;- runAnalysis(\"TTestIndependentSamples\", \"test.csv\", options,\n                       makeTests = TRUE)\n# Prints boilerplate test code to the console — copy, refine, and save\n\n\n10.4.4 Plot Tests\nPlot tests use SVG snapshot comparison:\ntest_that(\"T-Test plot matches\", {\n  options &lt;- analysisOptions(\"TTestIndependentSamples\")\n  options$dependent &lt;- \"contNormal\"\n  options$groupingVariable &lt;- \"facGender\"\n  options$descriptivesPlots &lt;- TRUE\n\n  results &lt;- runAnalysis(\"TTestIndependentSamples\", \"test.csv\", options)\n\n  plotName &lt;- results[[\"results\"]][[\"descriptives\"]][[\"collection\"]][[\"descriptives_descriptivesPlot\"]][[\"data\"]]\n  testPlot &lt;- results[[\"state\"]][[\"figures\"]][[plotName]][[\"obj\"]]\n  jaspTools::expect_equal_plots(testPlot, \"descriptives-plot\")\n})\nOn first run, the reference SVG is created in _snaps/. Subsequent runs compare against it.\n\n\n10.4.5 Managing Plot Snapshots\nWhen a plot intentionally changes, update the reference:\njaspTools::manageTestPlots()\nThis opens a Shiny app showing old vs. new plots. Accepting a change updates the SVG snapshot.\n\n\n10.4.6 Testing Errors and Validation\ntest_that(\"T-Test gives validation error with zero-variance variable\", {\n  options &lt;- analysisOptions(\"TTestIndependentSamples\")\n  options$dependent &lt;- \"debMiss30\"\n  options$groupingVariable &lt;- \"facGender\"\n\n  results &lt;- runAnalysis(\"TTestIndependentSamples\", \"test.csv\", options)\n\n  expect_identical(results[[\"status\"]], \"validationError\")\n})"
+  },
+  {
+    "objectID": "testing.html#running-tests",
+    "href": "testing.html#running-tests",
+    "title": "10  Testing Your Module",
+    "section": "10.5 Running Tests",
+    "text": "10.5 Running Tests\n# All tests in the module\njaspTools::testAll()\n\n# A single analysis\njaspTools::testAnalysis(\"TTestIndependentSamples\")\n\n10.5.1 Debugging Failures\n\n\n\n\n\n\n\n\nSymptom\nCause\nFix\n\n\n\n\nFailure (values differ)\nOutput changed intentionally\nUpdate reference with makeTestTable() / manageTestPlots()\n\n\nFailure (values differ)\nUnintentional regression\nFix the R code\n\n\nError (test crashes)\nR code throws an exception\nRun the analysis interactively in RStudio to debug\n\n\nPlot failure\nSVG differs\nRun manageTestPlots() to review; accept if change is intentional"
+  },
+  {
+    "objectID": "testing.html#sec-ci",
+    "href": "testing.html#sec-ci",
+    "title": "10  Testing Your Module",
+    "section": "10.6 GitHub Actions CI",
+    "text": "10.6 GitHub Actions CI\nEvery JASP module should have a CI workflow that runs tests on push and PR:\n# .github/workflows/unittests.yml\nname: Unit Tests\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ${{ matrix.os }}\n    strategy:\n      matrix:\n        os: [windows-latest, macOS-latest]\n\n    steps:\n      - uses: actions/checkout@v4\n      - uses: jasp-stats/jasp-actions/setup-test-env@master\n      - uses: jasp-stats/jasp-actions/run-unit-tests@master\nIf your module requires JAGS:\n      - uses: jasp-stats/jasp-actions/setup-test-env@master\n        with:\n          requiresJAGS: true"
+  },
+  {
+    "objectID": "testing.html#test-coverage-goals",
+    "href": "testing.html#test-coverage-goals",
+    "title": "10  Testing Your Module",
+    "section": "10.7 Test Coverage Goals",
+    "text": "10.7 Test Coverage Goals\n\n\n\n\n\n\n\nModule type\nMinimum coverage\n\n\n\n\nOfficial JASP module\n≥ 70% of analyses have tests\n\n\nCommunity module\nAt least one test per analysis that runs without error\n\n\n\nFor the full module checklists, see Chapter 15."
+  },
+  {
+    "objectID": "debugging.html#enabling-logging",
+    "href": "debugging.html#enabling-logging",
+    "title": "11  Debugging & Logging",
+    "section": "11.1 Enabling Logging",
+    "text": "11.1 Enabling Logging\n\nOpen JASP.\nClick the hamburger menu (☰) → Preferences.\nGo to Advanced Preferences.\nToggle logging on.\n\nJASP writes one log per session, with separate files for the Desktop process and each Engine process."
+  },
+  {
+    "objectID": "debugging.html#log-file-locations",
+    "href": "debugging.html#log-file-locations",
+    "title": "11  Debugging & Logging",
+    "section": "11.2 Log File Locations",
+    "text": "11.2 Log File Locations\n\n\n\n\n\n\n\nPlatform\nPath\n\n\n\n\nWindows\n%USERPROFILE%\\AppData\\Roaming\\JASP\\JASP\\Logs\n\n\nmacOS\n~/Library/Application Support/JASP/JASP/Logs/\n\n\nLinux (Flatpak)\n~/.var/app/org.jaspstats.JASP/data/JASP/JASP/Logs\n\n\n\n\n11.2.1 Finding the Right Log\nLogs are named: JASP YYYY-MM-DD HH_MM_SS Desktop.log (and Engine0.log, Engine1.log, etc.)\nCollect all files with the same timestamp to get the complete picture for a single session."
+  },
+  {
+    "objectID": "debugging.html#viewing-logs",
+    "href": "debugging.html#viewing-logs",
+    "title": "11  Debugging & Logging",
+    "section": "11.3 Viewing Logs",
+    "text": "11.3 Viewing Logs\n\n11.3.1 From Within JASP\nIn Advanced Preferences, click Show Logs to open the log directory.\n\n\n11.3.2 Command Line\nLaunch JASP from a terminal with --logToFile to also print output to the console:\n\nmacOSLinuxWindows\n\n\n/Applications/JASP.app/Contents/MacOS/JASP --logToFile\n\n\nflatpak run org.jaspstats.JASP --logToFile\n\n\n\"C:\\Program Files\\JASP\\JASP.exe\" --logToFile 2&gt;&1 | more\nOn Windows, pipe the output to more or redirect to a file to see it, since the console does not display output by default."
+  },
+  {
+    "objectID": "debugging.html#when-jasp-wont-start",
+    "href": "debugging.html#when-jasp-wont-start",
+    "title": "11  Debugging & Logging",
+    "section": "11.4 When JASP Won’t Start",
+    "text": "11.4 When JASP Won’t Start\nIf JASP crashes on startup, logs are often still written before the crash. Use the command-line launch method above to capture output, or check the log directory manually for the most recent files."
+  },
+  {
+    "objectID": "debugging.html#debugging-r-code",
+    "href": "debugging.html#debugging-r-code",
+    "title": "11  Debugging & Logging",
+    "section": "11.5 Debugging R Code",
+    "text": "11.5 Debugging R Code\nFor R analysis issues, it is often faster to debug outside JASP using jaspTools and R’s browser() function. See Chapter 7 for the full workflow, including:\n\nRunning analyses interactively with jaspTools::runAnalysis()\nSetting breakpoints with browser()\nInspecting jaspResults objects mid-execution\nThe renv bootstrap script for setting up your environment\n\n\nUse RStudio’s debugger (browser(), breakpoints) as usual."
+  },
+  {
+    "objectID": "debugging.html#common-issues",
+    "href": "debugging.html#common-issues",
+    "title": "11  Debugging & Logging",
+    "section": "11.6 Common Issues",
+    "text": "11.6 Common Issues\n\n\n\n\n\n\n\n\nSymptom\nLikely cause\nFix\n\n\n\n\nAnalysis shows red error\nR code threw an error\nCheck Engine log for stack trace; debug in RStudio\n\n\nAnalysis runs but table is empty\nTable not filled or wrong $dependOn key\nCheck that addRows() / setData() is called and dependencies match QML option names\n\n\nPlot is blank\nggplot object not assigned to plot element\nVerify plotObj$plotObject &lt;- ggplot(...)\n\n\nModule won’t load\nDESCRIPTION or NAMESPACE error\nCheck that R CMD INSTALL . succeeds without warnings\n\n\nOptions not reaching R\nQML name doesn’t match R options[[...]] key\nCompare QML name: values with R option access"
+  },
+  {
+    "objectID": "i18n.html#how-translation-works",
+    "href": "i18n.html#how-translation-works",
+    "title": "12  Translating Your Module",
+    "section": "12.1 How Translation Works",
+    "text": "12.1 How Translation Works\n\n\n\n\nflowchart LR\n    A[Developer marks strings] --&gt; B[Weblate extracts marked strings]\n    B --&gt; C[Translators provide translations]\n    C --&gt; D[JASP displays translated text at runtime]\n\n\n\n\n\n\nQML: qsTr(\"text\") → extracted by Qt’s lupdate tool.\nR: gettext(\"text\") / gettextf(\"text %s\", var) → extracted by R’s translation tooling.\nC++: tr(\"text\") → extracted by Qt’s lupdate tool."
+  },
+  {
+    "objectID": "i18n.html#qml-translation",
+    "href": "i18n.html#qml-translation",
+    "title": "12  Translating Your Module",
+    "section": "12.2 QML Translation",
+    "text": "12.2 QML Translation\nWrap every user-visible string in qsTr():\nCheckBox { name: \"meanDifference\"; label: qsTr(\"Mean difference\") }\n\nGroup\n{\n    title: qsTr(\"Statistics\")\n    CheckBox { name: \"effectSize\"; label: qsTr(\"Effect size\") }\n}\n\n12.2.1 Parameters in QML\nUse %1, %2, etc. for substitutions:\ntext: qsTr(\"Group %1 vs Group %2\").arg(group1Name).arg(group2Name)"
+  },
+  {
+    "objectID": "i18n.html#r-translation",
+    "href": "i18n.html#r-translation",
+    "title": "12  Translating Your Module",
+    "section": "12.3 R Translation",
+    "text": "12.3 R Translation\n\n12.3.1 gettext() — Simple Strings\ntable$addColumnInfo(name = \"estimate\", title = gettext(\"Estimate\"), type = \"number\")\n\n\n12.3.2 gettextf() — Strings with Parameters\nUse sprintf-style format specifiers:\nmessage &lt;- gettextf(\"Variable '%s' has %d observations.\", varName, nObs)\n\n\n12.3.3 Numbered Arguments\nWhen a string has multiple parameters, use numbered format specifiers (%1$s, %2$d) so translators can reorder them:\n# Good — translators can reorder\ngettextf(\"Compared %1$s with %2$s using %3$s.\", group1, group2, method)\n\n# Bad — translators cannot reorder\ngettextf(\"Compared %s with %s using %s.\", group1, group2, method)\n\n\n12.3.4 Plurals with ngettext()\nmsg &lt;- ngettext(nObs,\n  \"Only 1 observation. At least 2 are required.\",\n  \"Only %d observations. At least 2 are required.\"\n)\n\n\n12.3.5 Unicode Characters\nUse \\uXXXX escapes, never raw Unicode characters or intToUtf8():\n# Good\n\"\\u2260\"  # ≠\n\n# Bad\n\"≠\"              # fails on some locales\nintToUtf8(8800)  # not translatable"
+  },
+  {
+    "objectID": "i18n.html#common-patterns",
+    "href": "i18n.html#common-patterns",
+    "title": "12  Translating Your Module",
+    "section": "12.4 Common Patterns",
+    "text": "12.4 Common Patterns\n\n12.4.1 Converting paste() to gettextf()\npaste() concatenation cannot be translated because word order differs across languages. Always convert to gettextf():\n# Bad — untranslatable\nmessage &lt;- paste(\"Variable\", varName, \"has\", nObs, \"observations\")\n\n# Good — translatable\nmessage &lt;- gettextf(\"Variable '%1$s' has %2$d observations.\", varName, nObs)\n\n\n12.4.2 Wrapping Expressions\nIf you construct expressions for display:\n# Wrap the template, not the variable name\ntitle &lt;- gettextf(\"P(%1$s | data)\", hypothesis)\n\n\n12.4.3 Table Titles and Column Names\nEvery title in createJaspTable() and addColumnInfo() must be wrapped:\ntable &lt;- createJaspTable(title = gettext(\"Descriptive Statistics\"))\ntable$addColumnInfo(name = \"mean\", title = gettext(\"Mean\"),   type = \"number\")\ntable$addColumnInfo(name = \"sd\",   title = gettext(\"SD\"),     type = \"number\")\ntable$addColumnInfo(name = \"n\",    title = gettext(\"N\"),      type = \"integer\")\n\n\n12.4.4 Footnotes and Error Messages\ntable$addFootnote(message = gettext(\"Levene's test is significant (p &lt; .05).\"))\ntable$setError(gettext(\"The dependent variable contains only missing values.\"))"
+  },
+  {
+    "objectID": "i18n.html#what-not-to-translate",
+    "href": "i18n.html#what-not-to-translate",
+    "title": "12  Translating Your Module",
+    "section": "12.5 What NOT to Translate",
+    "text": "12.5 What NOT to Translate\n\nOption names (name: in QML, keys in options[[...]] in R)\nColumn/row name keys (the name parameter in addColumnInfo)\nInternal log messages\nCode comments\nVariable names used in computation"
+  },
+  {
+    "objectID": "i18n.html#c-translation",
+    "href": "i18n.html#c-translation",
+    "title": "12  Translating Your Module",
+    "section": "12.6 C++ Translation",
+    "text": "12.6 C++ Translation\nUse tr() inside QObject-derived classes:\nQString message = tr(\"Analysis complete\");\nFor non-QObject code, use QCoreApplication::translate()."
+  },
+  {
+    "objectID": "i18n.html#quick-reference",
+    "href": "i18n.html#quick-reference",
+    "title": "12  Translating Your Module",
+    "section": "12.7 Quick Reference",
+    "text": "12.7 Quick Reference\n\n\n\n\n\n\n\n\n\nLanguage\nSimple string\nWith parameters\nPlural\n\n\n\n\nQML\nqsTr(\"text\")\nqsTr(\"x %1\").arg(v)\n—\n\n\nR\ngettext(\"text\")\ngettextf(\"x %s\", v)\nngettext(n, \"one\", \"many\")\n\n\nC++\ntr(\"text\")\ntr(\"x %1\").arg(v)\n—"
+  },
+  {
+    "objectID": "upgrades.html#how-it-works",
+    "href": "upgrades.html#how-it-works",
+    "title": "13  Backward Compatibility (Upgrades.qml)",
+    "section": "13.1 How It Works",
+    "text": "13.1 How It Works\n\n\n\n\nflowchart LR\n    A[User opens old .jasp file] --&gt; B{Saved version &lt; current?}\n    B -- Yes --&gt; C[Apply Upgrades.qml transforms]\n    C --&gt; D[Analysis runs with updated options]\n    B -- No --&gt; D\n\n\n\n\n\nPlace an Upgrades.qml file in inst/ (alongside Description.qml). JASP chains upgrades automatically — if a file was saved at version 0.1 and the module is now at 0.4, JASP applies 0.1→0.2, then 0.2→0.3, then 0.3→0.4 in sequence."
+  },
+  {
+    "objectID": "upgrades.html#file-structure",
+    "href": "upgrades.html#file-structure",
+    "title": "13  Backward Compatibility (Upgrades.qml)",
+    "section": "13.2 File Structure",
+    "text": "13.2 File Structure\nimport QtQuick\nimport JASP.Module\n\nUpgrades\n{\n    Upgrade\n    {\n        functionName:  \"TTestIndependentSamples\"\n        fromVersion:   \"0.16\"\n        toVersion:     \"0.17\"\n\n        ChangeRename { from: \"confidenceInterval\"; to: \"ciWidth\" }\n        ChangeSetValue { name: \"effectSizeType\"; jsonValue: \"\\\"cohen\\\"\" }\n    }\n\n    Upgrade\n    {\n        functionName:  \"TTestIndependentSamples\"\n        fromVersion:   \"0.17\"\n        toVersion:     \"0.18\"\n\n        ChangeRemove { name: \"legacyOption\" }\n    }\n}"
+  },
+  {
+    "objectID": "upgrades.html#change-types",
+    "href": "upgrades.html#change-types",
+    "title": "13  Backward Compatibility (Upgrades.qml)",
+    "section": "13.3 Change Types",
+    "text": "13.3 Change Types\n\n13.3.1 ChangeRename\nRename an option, preserving its value:\nChangeRename { from: \"oldName\"; to: \"newName\" }\n\n\n13.3.2 ChangeCopy\nCopy an option’s value to a new name (original remains):\nChangeCopy { from: \"source\"; to: \"target\" }\n\n\n13.3.3 ChangeSetValue\nSet an option to a fixed value:\n// String\nChangeSetValue { name: \"method\"; jsonValue: \"\\\"bootstrap\\\"\" }\n\n// Number\nChangeSetValue { name: \"ciWidth\"; jsonValue: \"95\" }\n\n// Boolean\nChangeSetValue { name: \"effectSize\"; jsonValue: \"true\" }\n\n// Array\nChangeSetValue { name: \"variables\"; jsonValue: \"[\\\"x\\\", \\\"y\\\"]\" }\n\n// Object\nChangeSetValue { name: \"config\"; jsonValue: \"{\\\"a\\\": 1, \\\"b\\\": 2}\" }\n\n\n\n\n\n\nNote\n\n\n\nThe jsonValue must be valid JSON wrapped in a QML string. String values need escaped inner quotes: \"\\\"value\\\"\".\n\n\n\n\n13.3.4 ChangeJS\nRun a JavaScript function to compute the new value. The function receives the full options object (with all prior changes applied) and must return the new value:\nChangeJS\n{\n    name:     \"newOption\"\n    jsFunction: function(options)\n    {\n        // Convert a radio button value to separate booleans\n        if (options[\"oldRadio\"] === \"optionA\")\n            return true;\n        return false;\n    }\n}\nChangeJS is the most powerful transform — use it when the conversion logic is non-trivial.\n\n13.3.4.1 Utility Functions\nInside ChangeJS, you can use qmlUtils helpers:\n\nqmlUtils.encodeAllColumnNames(value) — encode column names for internal storage.\nqmlUtils.decodeAllColumnNames(value) — decode column names for display.\nqmlUtils.encodeJson(value) / qmlUtils.decodeJson(value) — JSON serialization.\n\n\n\n\n13.3.5 ChangeRemove\nRemove an option entirely:\nChangeRemove { name: \"obsoleteOption\" }"
+  },
+  {
+    "objectID": "upgrades.html#conditional-changes",
+    "href": "upgrades.html#conditional-changes",
+    "title": "13  Backward Compatibility (Upgrades.qml)",
+    "section": "13.4 Conditional Changes",
+    "text": "13.4 Conditional Changes\nAdd a condition to any change. The change only applies when the condition evaluates to true:\nChangeRename\n{\n    from: \"oldName\"\n    to:   \"newName\"\n    condition: function(options) { return options[\"someFlag\"] === true; }\n}\nIf no condition is specified, it defaults to true (always applied).\n\n13.4.1 Reusing Conditions\nGive a condition an id to reuse across multiple changes:\nUpgrade\n{\n    functionName: \"MyAnalysis\"\n    fromVersion:  \"0.2\"\n    toVersion:    \"0.3\"\n\n    ChangeJS\n    {\n        id:   \"wasLegacyMode\"\n        name: \"mode\"\n        condition: function(options) { return options[\"legacyMode\"] === true; }\n        jsFunction: function(options) { return \"modern\"; }\n    }\n\n    ChangeRemove\n    {\n        name: \"legacyMode\"\n        condition: \"wasLegacyMode\"\n    }\n}"
+  },
+  {
+    "objectID": "upgrades.html#user-messages",
+    "href": "upgrades.html#user-messages",
+    "title": "13  Backward Compatibility (Upgrades.qml)",
+    "section": "13.5 User Messages",
+    "text": "13.5 User Messages\nOptionally show a warning when an upgrade is applied:\nUpgrade\n{\n    functionName: \"MyAnalysis\"\n    fromVersion:  \"0.1\"\n    toVersion:    \"0.2\"\n    msg:          qsTr(\"Options have been updated. Please review your settings.\")\n\n    ChangeRename { from: \"old\"; to: \"new\" }\n}\nMessages can also go on individual changes:\nChangeRemove { name: \"dropped\"; msg: qsTr(\"The 'dropped' option is no longer supported.\") }"
+  },
+  {
+    "objectID": "upgrades.html#version-tying",
+    "href": "upgrades.html#version-tying",
+    "title": "13  Backward Compatibility (Upgrades.qml)",
+    "section": "13.6 Version Tying",
+    "text": "13.6 Version Tying\n\nThe version in Upgrades.qml matches your module version (from DESCRIPTION and Description.qml), not the JASP version.\nYou do not need an Upgrade block for every module version — only for versions where options actually changed.\nJASP chains through intermediate versions automatically.\n\n\n13.6.1 Pre-0.15 Modules\nModules that existed before JASP 0.15 (when versioning was managed by JASP itself) should use version 0.15 as the starting point and 0.14.3 as the fromVersion for the initial upgrade block."
+  },
+  {
+    "objectID": "upgrades.html#when-to-add-upgrades",
+    "href": "upgrades.html#when-to-add-upgrades",
+    "title": "13  Backward Compatibility (Upgrades.qml)",
+    "section": "13.7 When to Add Upgrades",
+    "text": "13.7 When to Add Upgrades\n\n\n\n\n\n\nRule of Thumb\n\n\n\nIf you change any option name in QML, add an Upgrades.qml entry. If you only add new options (with defaults), no upgrade is needed.\n\n\n\nRenamed option → ChangeRename\nRemoved option → ChangeRemove\nChanged semantics (e.g., radio button → checkboxes) → ChangeJS\nAdded new option with default → No upgrade needed (JASP fills in the default)"
+  },
+  {
+    "objectID": "versioning.html#version-numbers",
+    "href": "versioning.html#version-numbers",
+    "title": "14  Versioning & Releases",
+    "section": "14.1 Version Numbers",
+    "text": "14.1 Version Numbers\nModule versions follow a three-part scheme: major.minor.patch (e.g., 0.19.1). The version is defined in two places and must match:\n\n\n\nFile\nLocation\n\n\n\n\nDESCRIPTION\nVersion: 0.19.1\n\n\ninst/Description.qml\nversion: \"0.19.1\""
+  },
+  {
+    "objectID": "versioning.html#when-to-bump",
+    "href": "versioning.html#when-to-bump",
+    "title": "14  Versioning & Releases",
+    "section": "14.2 When to Bump",
+    "text": "14.2 When to Bump\n\n\n\n\nflowchart TD\n    A[Module has a release] --&gt; B[First change after release]\n    B --&gt; C[Bump version number]\n    C --&gt; D[Continue development]\n    D --&gt; E{Satisfied?}\n    E -- No --&gt; D\n    E -- Yes --&gt; F[Ask core programmer to release]\n    F --&gt; A\n\n\n\n\n\nRule: The very first commit after a release should bump the version number. This ensures that:\n\nBeta builds show “Install Beta” rather than “Downgrade Beta” in JASP’s module library.\nJASP reloads the module properly between restarts.\n\n\n14.2.1 How high to bump\nIt does not matter which part you increment, as long as the new version is higher:\n\nSmall bug fix: 0.19.1 → 0.19.2\nNew feature: 0.19.1 → 0.20.0\nMajor rework: 0.19.1 → 1.0.0\n\nYou may also align with the current JASP release number (e.g., bump to 0.96 when JASP 0.96 ships), but this is optional."
+  },
+  {
+    "objectID": "versioning.html#release-workflow-for-official-modules",
+    "href": "versioning.html#release-workflow-for-official-modules",
+    "title": "14  Versioning & Releases",
+    "section": "14.3 Release Workflow for Official Modules",
+    "text": "14.3 Release Workflow for Official Modules\nOfficial modules live under jasp-stats/ on GitHub.\n\nDevelopment: push commits to jasp-stats/jaspModuleName. Every push auto-syncs to the module registry and triggers a beta bundle build.\nBeta testing: users can install beta bundles from JASP’s module library for testing.\nRelease: when the module is ready, ask a core programmer (lead developer) to create an official release.\nPost-release: immediately bump the version number for the next development cycle."
+  },
+  {
+    "objectID": "versioning.html#release-workflow-for-community-modules",
+    "href": "versioning.html#release-workflow-for-community-modules",
+    "title": "14  Versioning & Releases",
+    "section": "14.4 Release Workflow for Community Modules",
+    "text": "14.4 Release Workflow for Community Modules\nCommunity modules live under your personal GitHub account.\n\nDevelopment: push to your own repository.\nSubmission: register your module in the community registry (see Chapter 15).\nUpdates: open cross-fork PRs to the jasp-stats-modules fork of your repo.\nBeta/Release: after merge, automated systems build and publish a beta release."
+  },
+  {
+    "objectID": "versioning.html#upgrades.qml-and-versions",
+    "href": "versioning.html#upgrades.qml-and-versions",
+    "title": "14  Versioning & Releases",
+    "section": "14.5 Upgrades.qml and Versions",
+    "text": "14.5 Upgrades.qml and Versions\nUpgrade entries in Upgrades.qml reference module versions, not JASP versions. When you bump a version and rename or remove options, add an upgrade block targeting that version range (see Chapter 13)."
+  },
+  {
+    "objectID": "publishing.html#community-module-submission",
+    "href": "publishing.html#community-module-submission",
+    "title": "15  Publishing Your Module",
+    "section": "15.1 Community Module Submission",
+    "text": "15.1 Community Module Submission\nCommunity modules are listed in the jasp-stats-modules registry. To add your module:\n\n15.1.1 Option 1: Contact the Team\nOpen an issue or send a message on Mattermost. The JASP team will add it for you.\n\n\n15.1.2 Option 2: Pull Request\n\nFork the jasp-stats-modules registry repository.\nAdd a YAML file in the modules-metadata/ folder:\nname: \"YourModuleName\"\ngitUrl: \"https://github.com/yourname/jaspYourModule\"\nCreate a pull request.\nAfter review and merge, your module appears in the beta-modules registry."
+  },
+  {
+    "objectID": "publishing.html#updating-a-community-module",
+    "href": "publishing.html#updating-a-community-module",
+    "title": "15  Publishing Your Module",
+    "section": "15.2 Updating a Community Module",
+    "text": "15.2 Updating a Community Module\nWhen you have new features or bug fixes ready, open a cross-fork pull request from your repository to the JASP organization’s fork:\n\nFind the fork: https://github.com/jasp-stats-modules/YourModuleName\nCreate cross-fork PR:\n\nGo to the JASP fork → Pull Requests → New Pull Request\nClick “compare across forks”\nSet:\n\nBase repository: jasp-stats-modules/YourModuleName (JASP’s fork)\nBase branch: master or main\nHead repository: yourname/YourModuleName (your repo)\nCompare branch: your update branch\n\nClick Create pull request\n\nReview: the JASP team reviews and may request adjustments.\nMerge & sync: once merged, automated systems build and publish a beta release."
+  },
+  {
+    "objectID": "publishing.html#updating-an-official-module",
+    "href": "publishing.html#updating-an-official-module",
+    "title": "15  Publishing Your Module",
+    "section": "15.3 Updating an Official Module",
+    "text": "15.3 Updating an Official Module\nOfficial modules (jasp-stats/jasp*) sync automatically:\n\nEvery push to the module repository triggers a beta bundle build.\nFor a proper release, ask a core programmer.\nUpdate the NEWS file with a summary of changes before requesting a release."
+  },
+  {
+    "objectID": "publishing.html#module-quality-checklists",
+    "href": "publishing.html#module-quality-checklists",
+    "title": "15  Publishing Your Module",
+    "section": "15.4 Module Quality Checklists",
+    "text": "15.4 Module Quality Checklists\n\n15.4.1 Official JASP Module Checklist\n\n\n\n\n\n\nImportant\n\n\n\nAll items should be completed before requesting an official release.\n\n\n\nUnit tests with ≥ 70% analysis coverage\nAuto-generated tests from .jasp example files (makeTestsFromExamples())\nAll tests pass in GitHub Actions CI (Section 10.6)\nComplete help files for every analysis (inst/help/)\ninfo properties on all QML elements for inline documentation\nInformative README with module description and screenshots\nNEWS / changelog file maintained and updated before each release\nOption names follow naming conventions (Section 8.3)\nUpgrades.qml entries for any renamed/removed options (Chapter 13)\nAll user-visible strings wrapped for translation (Chapter 12)\nCorrect license headers on all source files (Chapter 17)\nR style compliance (Section 8.1)\nQML style compliance (Section 8.2)\nStandardised error messages (Appendix D)\n\n\n\n15.4.2 Community JASP Module Checklist\n\n\n\n\n\n\nNote\n\n\n\nThese are the minimum requirements for a community module to be accepted into the registry.\n\n\n\nAt least one test per analysis that runs without error\nREADME with module description and usage instructions\nWorking example .jasp files (in tests/testthat/jaspfiles/ or examples/)\nModule installs and loads without errors in current JASP nightly\nValid DESCRIPTION file with correct metadata (title, author, version, dependencies)\nValid NAMESPACE file (auto-generated or correct exports)\nDescription.qml with proper module name, description, version, and analysis entries\n\n\n\n15.4.3 Optional but Recommended (Community)\n\nHelp files or info properties on QML elements\nTranslation-ready strings\nGitHub Actions CI workflow\nUpgrades.qml for backward compatibility"
+  },
+  {
+    "objectID": "git-workflow.html#setup",
+    "href": "git-workflow.html#setup",
+    "title": "16  Git Workflow",
+    "section": "16.1 Setup",
+    "text": "16.1 Setup\n# 1. Fork the module repo on GitHub (via the web UI)\n\n# 2. Clone your fork\ngit clone https://github.com/YOUR-USERNAME/jaspModuleName.git\ncd jaspModuleName\n\n# 3. Add the upstream remote\ngit remote add upstream https://github.com/jasp-stats/jaspModuleName.git\nVerify remotes:\ngit remote -v\n# origin    https://github.com/YOUR-USERNAME/jaspModuleName.git (fetch/push)\n# upstream  https://github.com/jasp-stats/jaspModuleName.git (fetch/push)"
+  },
+  {
+    "objectID": "git-workflow.html#daily-workflow",
+    "href": "git-workflow.html#daily-workflow",
+    "title": "16  Git Workflow",
+    "section": "16.2 Daily Workflow",
+    "text": "16.2 Daily Workflow\n\n16.2.1 Feature Branches\nAlways work on a feature branch, never directly on master:\ngit checkout master\ngit pull upstream master\ngit checkout -b feature/my-new-analysis\n\n\n16.2.2 Commit Often, Push Regularly\ngit add -A\ngit commit -m \"Add initial t-test implementation\"\ngit push origin feature/my-new-analysis\nPush to your fork frequently — it serves as a backup.\n\n\n16.2.3 Stay Up to Date with Upstream\nRebase (not merge) to keep a clean history:\ngit stash                          # save uncommitted work\ngit fetch upstream                 # get latest changes\ngit rebase upstream/master         # replay your commits on top\ngit push origin feature/my-new-analysis   # update your fork\ngit stash pop                      # restore uncommitted work\n\n\n\n\n\n\nAfter Rebasing with an Open PR\n\n\n\nIf you have an open pull request and you rebased, you must force-push:\ngit push --force origin feature/my-new-analysis\nNever run git pull after a rebase — that re-introduces the old commits as duplicates."
+  },
+  {
+    "objectID": "git-workflow.html#pull-requests",
+    "href": "git-workflow.html#pull-requests",
+    "title": "16  Git Workflow",
+    "section": "16.3 Pull Requests",
+    "text": "16.3 Pull Requests\n\nPush your feature branch to your fork.\nOn GitHub, open a pull request from your-fork:feature-branch → jasp-stats:master.\nAssign a reviewer (module maintainer — see the maintainer table in the JASP contributing guide).\nAddress CI failures and review comments.\nOnce approved, the maintainer merges.\n\n\n16.3.1 PR Tips\n\nKeep PRs focused — one feature or fix per PR.\nWrite a clear description of what changed and why.\nIf CI fails, check the GitHub Actions logs (see Section 10.6)."
+  },
+  {
+    "objectID": "git-workflow.html#squashing-commits",
+    "href": "git-workflow.html#squashing-commits",
+    "title": "16  Git Workflow",
+    "section": "16.4 Squashing Commits",
+    "text": "16.4 Squashing Commits\nBefore opening a PR, you may want to squash work-in-progress commits into a clean set:\n# Squash last 5 commits into one\ngit reset --soft HEAD~5\ngit commit -m \"Implement independent samples t-test\"\ngit push --force origin feature/my-new-analysis"
+  },
+  {
+    "objectID": "git-workflow.html#resolving-conflicts",
+    "href": "git-workflow.html#resolving-conflicts",
+    "title": "16  Git Workflow",
+    "section": "16.5 Resolving Conflicts",
+    "text": "16.5 Resolving Conflicts\nWhen rebasing produces conflicts:\n\nGit pauses and marks conflicting files.\nOpen each file, find the &lt;&lt;&lt;&lt;&lt;&lt;&lt; markers, and resolve manually.\nStage the resolved files:\ngit add path/to/resolved-file.R\nContinue the rebase:\ngit rebase --continue\nPush the result:\ngit push --force origin feature/my-new-analysis"
+  },
+  {
+    "objectID": "git-workflow.html#branch-naming",
+    "href": "git-workflow.html#branch-naming",
+    "title": "16  Git Workflow",
+    "section": "16.6 Branch Naming",
+    "text": "16.6 Branch Naming\n\n\n\nType\nPattern\nExample\n\n\n\n\nNew feature\nfeature/description\nfeature/bayesian-ttest\n\n\nBug fix\nfix/description\nfix/ttest-variance-check\n\n\nDocs\ndocs/description\ndocs/update-help-files"
+  },
+  {
+    "objectID": "git-workflow.html#module-maintainers",
+    "href": "git-workflow.html#module-maintainers",
+    "title": "16  Git Workflow",
+    "section": "16.7 Module Maintainers",
+    "text": "16.7 Module Maintainers\nEach module under jasp-stats/ has an assigned maintainer who reviews PRs. Check the module’s DESCRIPTION file or the JASP contributing guide for the current maintainer."
+  },
+  {
+    "objectID": "licensing.html#license-structure",
+    "href": "licensing.html#license-structure",
+    "title": "17  Licensing",
+    "section": "17.1 License Structure",
+    "text": "17.1 License Structure\n\n\n\n\n\n\n\n\nComponent\nLicense\nScope\n\n\n\n\nJASP Desktop (GUI)\nAGPL-3.0-or-later\nDesktop binary, built from Desktop/ + Common/\n\n\nJASP Engine\nGPL-2.0-or-later\nEngine binary, built from Engine/ + Common/\n\n\nCommon code\nGPL-2.0-or-later\nShared between Desktop and Engine\n\n\nR module code\nGPL-2.0-or-later\nAnalysis R files, QML files\n\n\n\n\n17.1.1 Why Two Licenses?\nThe GUI uses AGPL-3+ to ensure that any hosted version of JASP (e.g., a web service) must also share its source code. The Engine uses GPL-2+ because R itself is GPL-licensed, and the engine links directly with R."
+  },
+  {
+    "objectID": "licensing.html#copyright-headers",
+    "href": "licensing.html#copyright-headers",
+    "title": "17  Licensing",
+    "section": "17.2 Copyright Headers",
+    "text": "17.2 Copyright Headers\nEvery source file must have a copyright and license header.\n\n17.2.1 R Files (.R)\n#\n# Copyright (C) 2024 University of Amsterdam\n#\n# This program is free software: you can redistribute it and/or modify\n# it under the terms of the GNU General Public License as published by\n# the Free Software Foundation, either version 2 of the License, or\n# (at your option) any later version.\n#\n# This program is distributed in the hope that it will be useful,\n# but WITHOUT ANY WARRANTY; without even the implied warranty of\n# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n# GNU General Public License for more details.\n#\n# You should have received a copy of the GNU General Public License\n# along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.\n#\n\n\n17.2.2 C++ / QML Files (Desktop — AGPL)\n//\n// Copyright (C) 2024 University of Amsterdam\n//\n// This program is free software: you can redistribute it and/or modify\n// it under the terms of the GNU Affero General Public License as\n// published by the Free Software Foundation, either version 3 of the\n// License, or (at your option) any later version.\n//\n// This program is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU Affero General Public License for more details.\n//\n// You should have received a copy of the GNU Affero General Public\n// License along with this program.  If not, see\n// &lt;http://www.gnu.org/licenses/&gt;.\n//\n\n\n17.2.3 C++ Files (Engine/Common — GPL)\n//\n// Copyright (C) 2024 University of Amsterdam\n//\n// This program is free software: you can redistribute it and/or modify\n// it under the terms of the GNU General Public License as published by\n// the Free Software Foundation, either version 2 of the License, or\n// (at your option) any later version.\n//\n// This program is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU General Public License for more details.\n//\n// You should have received a copy of the GNU General Public License\n// along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.\n//"
+  },
+  {
+    "objectID": "licensing.html#who-holds-copyright",
+    "href": "licensing.html#who-holds-copyright",
+    "title": "17  Licensing",
+    "section": "17.3 Who Holds Copyright?",
+    "text": "17.3 Who Holds Copyright?\n\n\n\n\n\n\n\nContributor type\nCopyright line\n\n\n\n\nUniversity of Amsterdam employee\nCopyright (C) YEAR University of Amsterdam\n\n\nExternal contributor\nCopyright (C) YEAR Your Full Name\n\n\nModifying an existing file\nAdd your name/organization below the existing copyright"
+  },
+  {
+    "objectID": "licensing.html#for-module-authors",
+    "href": "licensing.html#for-module-authors",
+    "title": "17  Licensing",
+    "section": "17.4 For Module Authors",
+    "text": "17.4 For Module Authors\nIf you are writing a community module, you choose the license. However:\n\nR code that uses jaspResults (GPL-2+) must be GPL-2+ compatible.\nIf you want your module to be adopted as an official JASP module in the future, use GPL-2+ from the start.\n\nSet the license in your DESCRIPTION file:\nLicense: GPL (&gt;= 2)"
+  },
+  {
+    "objectID": "building-jasp.html#prerequisites-all-platforms",
+    "href": "building-jasp.html#prerequisites-all-platforms",
+    "title": "18  Building JASP from Source",
+    "section": "18.1 Prerequisites (All Platforms)",
+    "text": "18.1 Prerequisites (All Platforms)\n\nGit: clone the repository and manage submodules.\nGITHUB_PAT: a GitHub personal access token (no special scopes needed) to avoid API rate limits during the build.\nQt 6.7+ with Qt Creator 13: the GUI framework.\n\n\n18.1.1 Setting GITHUB_PAT\nCreate a token at GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic). Then set it:\n\nEnvironment VariableQt CreatorJASP Preferences\n\n\n# macOS / Linux — add to ~/.zshrc or ~/.bash_profile\nexport GITHUB_PAT=\"ghp_your_token_here\"\n:: Windows — set via System Properties → Environment Variables\nset GITHUB_PAT=ghp_your_token_here\n\n\nProject Settings → Build → Environment → Add: GITHUB_PAT = ghp_your_token_here\n\n\nPreferences → Advanced → GitHub PAT\n\n\n\n\n\n18.1.2 Clone and Initialise\ngit clone https://github.com/jasp-stats/jasp-desktop.git\ncd jasp-desktop\ngit submodule update --init"
+  },
+  {
+    "objectID": "building-jasp.html#platform-specific-instructions",
+    "href": "building-jasp.html#platform-specific-instructions",
+    "title": "18  Building JASP from Source",
+    "section": "18.2 Platform-Specific Instructions",
+    "text": "18.2 Platform-Specific Instructions\n\nWindowsmacOSLinux\n\n\nTools required:\n\nVisual Studio 2022 Community (Desktop C++ workload: MSVC v144, Windows 10 SDK, CMake tools)\nQt 6.7 with MSVC 2019 64-bit, Qt Compatibility Module, Qt WebEngine, Qt WebChannel, Qt Positioning\nQt Creator 13\nRTools45 (default path C:\\rtools45)\nConan ≥ 2.0.0\nWiX Toolset (for building the installer)\n\nRTools setup:\n\nInstall RTools45 to C:\\rtools45.\nOpen the ucrt64 console and install dependencies:\npacman -Syu\npacman -S mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake\nBuild ReadStat and librdata manually (see platform-specific build guide for commands).\nAdd C:\\rtools45\\ucrt64\\bin to your PATH. Ensure the Qt path comes before the RTools path.\n\nConan setup:\npip install conan\nconan profile detect --name default\nBuild: in Qt Creator, select the “Desktop Qt 6.7 MSVC2019 64bit” kit, set GITHUB_PAT in the build environment, and click Build.\n\n\nTools required:\n\nXcode (from the Mac App Store)\nQt 6.7 with Desktop kit, Qt Compatibility Module, Qt WebEngine, Qt WebChannel, Qt Positioning\nQt Creator 13\nHomebrew packages: conan cmake bison flex pkg-config automake autoconf create-dmg parallel ninja\nR.framework (from CRAN)\nGNU Fortran (universal binary from the CRAN R tools page)\n\nInstall Homebrew dependencies:\nbrew install conan cmake bison flex pkg-config automake autoconf create-dmg parallel ninja\nCode signing: for local development, create a self-signed certificate (see the self-signing guide in the development docs). For distribution, use an official Apple Developer certificate.\nBuild: open jasp-desktop in Qt Creator, configure with CMake, set GITHUB_PAT, and build.\n\n\nTools required:\n\nCMake &gt; 3.21, GCC, gfortran\nQt 6.7 with Desktop kit, Qt Compatibility Module, Qt WebEngine, Qt WebChannel, Qt Positioning\nQt Creator 13\nSystem packages (Ubuntu example):\nsudo apt install build-essential gfortran libboost-all-dev \\\n  libjags-dev libsqlite3-dev libssl-dev libarchive-dev \\\n  libjsoncpp-dev zlib1g-dev pkg-config\n\nCustom R path: if R is not in the default location:\ncmake -DCUSTOM_R_PATH=/path/to/R ...\nLocal library install: add -DLINUX_LOCAL_BUILD=ON to install module libraries locally instead of system-wide.\nDev Container: a VS Code Dev Container configuration is available with all dependencies pre-installed. Install the Dev Containers extension, open the repo, and select “Reopen in Container”. Set GITHUB_PAT as an environment variable before opening."
+  },
+  {
+    "objectID": "building-jasp.html#building-modules",
+    "href": "building-jasp.html#building-modules",
+    "title": "18  Building JASP from Source",
+    "section": "18.3 Building Modules",
+    "text": "18.3 Building Modules\nAfter building JASP, build the default modules:\n# From the jasp-desktop/Tools directory\n./buildAllDefaultJaspModules.sh\n# or for module bundles:\n./buildModuleBundlesLocally.sh"
+  },
+  {
+    "objectID": "building-jasp.html#qt-installation-notes",
+    "href": "building-jasp.html#qt-installation-notes",
+    "title": "18  Building JASP from Source",
+    "section": "18.4 Qt Installation Notes",
+    "text": "18.4 Qt Installation Notes\nWhen downloading Qt from the Qt open-source page:\n\nIn the installer, select Qt 6.7 (or newer), the Desktop target, and these additional components:\n\nQt Compatibility Module\nQt WebEngine\nQt WebChannel\nQt Positioning\n\nAlso install Qt Creator 13 (or newer)."
+  },
+  {
+    "objectID": "ai-assisted.html#supported-platforms",
+    "href": "ai-assisted.html#supported-platforms",
+    "title": "19  AI-Assisted Module Development",
+    "section": "19.1 Supported Platforms",
+    "text": "19.1 Supported Platforms\n\n\n\n\n\n\n\nPlatform\nSetup\n\n\n\n\nClaude Code\nClone the instructions repo, Claude picks up AGENTS.md automatically\n\n\nOpenAI Codex CLI\nUses codex.toml for configuration\n\n\nGitHub Copilot\nReads .instructions.md files and the AGENTS.md conventions\n\n\n\nAll three platforms can use the same instruction set — the repo contains configuration files for each."
+  },
+  {
+    "objectID": "ai-assisted.html#what-the-agent-instructions-cover",
+    "href": "ai-assisted.html#what-the-agent-instructions-cover",
+    "title": "19  AI-Assisted Module Development",
+    "section": "19.2 What the Agent Instructions Cover",
+    "text": "19.2 What the Agent Instructions Cover\nThe instructions encode the conventions described throughout this guide:\n\nR function structure: main function signature, jaspResults/dataset/options arguments, internal helpers with . prefix.\nQML control patterns: name/title/label conventions, Form structure, property alignment.\nError handling: validate only at system boundaries (dataset, TextField, FormulaField), use .hasErrors().\nTranslation: gettext()/gettextf() in R, qsTr() in QML, numbered arguments for reorderable strings.\nDependencies and caching: $dependOn(), createJaspState(), container inheritance.\nTable/plot lifecycle: create → set dependencies → configure columns → add to container → fill with data.\nOption naming: camelCase, singular nouns, abbreviations-as-words.\nGit workflow: feature branches, never push directly to master."
+  },
+  {
+    "objectID": "ai-assisted.html#setting-up",
+    "href": "ai-assisted.html#setting-up",
+    "title": "19  AI-Assisted Module Development",
+    "section": "19.3 Setting Up",
+    "text": "19.3 Setting Up\n\n19.3.1 Clone the Instructions\ngit clone https://github.com/jasp-stats/jasp-agent-instructions.git\n\n\n19.3.2 For Claude Code\nPlace or symlink the instructions alongside your module code. Claude automatically reads AGENTS.md from the workspace root.\n\n\n19.3.3 For Codex CLI\nThe codex.toml file configures Codex. Place it in your project root or reference it with --config:\ncodex --config path/to/codex.toml\n\n\n19.3.4 For GitHub Copilot\nCopy the relevant .instructions.md files to your workspace’s .github/ directory, or configure Copilot to reference the instructions repository."
+  },
+  {
+    "objectID": "ai-assisted.html#agent-workflow-for-jasp-modules",
+    "href": "ai-assisted.html#agent-workflow-for-jasp-modules",
+    "title": "19  AI-Assisted Module Development",
+    "section": "19.4 Agent Workflow for JASP Modules",
+    "text": "19.4 Agent Workflow for JASP Modules\nA typical AI-assisted development session:\n\n\n\n\nflowchart TD\n    A[Describe analysis to agent] --&gt; B[Agent generates R skeleton]\n    B --&gt; C[Agent generates QML form]\n    C --&gt; D[Agent generates Description.qml entry]\n    D --&gt; E[Review & refine generated code]\n    E --&gt; F[Agent generates unit tests]\n    F --&gt; G[Run tests, fix failures]\n    G --&gt; H[Agent adds translation wrappers]\n\n\n\n\n\n\n19.4.1 Tips\n\nBe specific: describe the statistical method, expected inputs/outputs, and which QML controls to use.\nReview everything: agents produce good scaffolding but may miss JASP-specific edge cases (e.g., encoding/decoding column names, .hasErrors() checks).\nUse tests as validation: ask the agent to generate tests, then run them to verify the implementation.\nIterative refinement: start with the skeleton, test it in JASP, then ask the agent to add features incrementally."
+  },
+  {
+    "objectID": "ai-assisted.html#r-session-handoff",
+    "href": "ai-assisted.html#r-session-handoff",
+    "title": "19  AI-Assisted Module Development",
+    "section": "19.5 R Session Handoff",
+    "text": "19.5 R Session Handoff\nWhen working with coding agents, the agent cannot directly run R or start JASP. The workflow is:\n\nAgent writes/modifies R and QML files.\nYou install the module (R CMD INSTALL .) and refresh in JASP.\nYou report the results (errors, table output, plot appearance) back to the agent.\nAgent adjusts the code based on your feedback.\n\nFor automated testing, the agent can run jaspTools::testAll() if jaspTools is configured in the R environment."
+  },
+  {
+    "objectID": "ai-assisted.html#migration-guide",
+    "href": "ai-assisted.html#migration-guide",
+    "title": "19  AI-Assisted Module Development",
+    "section": "19.6 Migration Guide",
+    "text": "19.6 Migration Guide\nIf you have an existing module and want to adopt agent-assisted development, the MIGRATION.md file in the instructions repo provides guidance on:\n\nRetrofitting existing code to match conventions\nAdding info properties to existing QML elements\nRestructuring test files to the jaspfiles/ layout\nAdding missing translation wrappers"
+  },
+  {
+    "objectID": "appendix-skeleton.html",
+    "href": "appendix-skeleton.html",
+    "title": "Appendix A — Analysis Skeleton (R Template)",
+    "section": "",
+    "text": "This is the annotated reference skeleton for a JASP R analysis file. Use it as a starting point for new analyses.\n#\n# Copyright (C) 2024 University of Amsterdam\n#\n# This program is free software: you can redistribute it and/or modify\n# it under the terms of the GNU General Public License as published by\n# the Free Software Foundation, either version 2 of the License, or\n# (at your option) any later version.\n#\n\n# Main function ----\n# This is the only public function. Its name must match the\n# function entry in Description.qml.\nMockAnalysis &lt;- function(jaspResults, dataset, options) {\n\n  # Set the analysis title (shown in the results panel)\n  jaspResults$title &lt;- \"Mock Analysis\"\n\n  # Init options: derive any values needed across the analysis\n  options &lt;- .mockInitOptions(jaspResults, options)\n\n  # Read the dataset using built-in helpers\n  dataset &lt;- .mockReadData(options)\n\n  # Validate data before computing\n  errors &lt;- .mockErrorHandling(dataset, options)\n\n  # Compute results (cached via jaspState)\n  mockResults &lt;- .mockComputeResults(jaspResults, dataset, options)\n\n  # Create output: containers, tables, plots\n  # These functions modify jaspResults in place and return nothing.\n  .mockContainerMain( jaspResults, options, mockResults)\n  .mockTableSomething(jaspResults, options, mockResults)\n  .mockTableSthElse(  jaspResults, options, mockResults)\n  .mockPlotSomething( jaspResults, options, mockResults)\n\n  return()\n}\n\n# Init functions ----\n.mockInitOptions &lt;- function(jaspResults, options) {\n  # Derive any computed options or ready-checks here.\n  options\n}\n\n.mockReadData &lt;- function(options) {\n  # Read data using JASP's built-in reader.\n  # columns: numeric variables; columns.as.factor: categorical variables.\n  if (options$groupvar == \"\") {\n    dataset &lt;- .readDataSetToEnd(columns = variables)\n  } else {\n    dataset &lt;- .readDataSetToEnd(\n      columns           = variables,\n      columns.as.factor = options$groupvar\n    )\n  }\n  dataset\n}\n\n.mockErrorHandling &lt;- function(dataset, options) {\n  # Validate the dataset. exitAnalysisIfErrors = TRUE stops cleanly.\n  .hasErrors(dataset, \"run\",\n    type                = c(\"observations\", \"variance\", \"infinity\"),\n    all.target          = options$variables,\n    observations.amount = \"&lt; 2\",\n    exitAnalysisIfErrors = TRUE\n  )\n}\n\n# Results functions ----\n.mockComputeResults &lt;- function(jaspResults, dataset, options) {\n  # Cache expensive computations with createJaspState.\n  if (is.null(jaspResults[[\"stateMockResults\"]])) {\n    mockResults &lt;- .mockResultsHelper(dataset)\n\n    jaspResults[[\"stateMockResults\"]] &lt;- createJaspState(mockResults)\n    jaspResults[[\"stateMockResults\"]]$dependOn(\"variables\")\n  } else {\n    mockResults &lt;- jaspResults[[\"stateMockResults\"]]$object\n  }\n  mockResults\n}\n\n.mockResultsHelper &lt;- function(dataset) {\n  # Perform the actual statistical computations here.\n}\n\n# Output functions ----\n.mockContainerMain &lt;- function(jaspResults, options, mockResults) {\n  # Early return if container already exists (caching).\n  if (!is.null(jaspResults[[\"mockMainContainer\"]])) return()\n\n  mainContainer &lt;- createJaspContainer(\"Model fit tables\")\n  mainContainer$dependOn(c(\"variables\", \"someotheroption\"))\n\n  jaspResults[[\"mockMainContainer\"]] &lt;- mainContainer\n}\n\n.mockTableSomething &lt;- function(jaspResults, options, mockResults) {\n  if (!is.null(jaspResults[[\"mockMainContainer\"]][[\"mockTable\"]])) return()\n\n  # Create a table and set dependencies\n  mockTable &lt;- createJaspTable(title = gettext(\"Mock Table\"))\n  mockTable$dependOn(c(\"variables\", \"someotheroption\"))\n\n  # Attach to container\n  jaspResults[[\"mockMainContainer\"]][[\"mockTable\"]] &lt;- mockTable\n\n  # Define columns: name (key), title (display), type, format\n  mockTable$addColumnInfo(name = \"chisq\",  title = \"\\u03a7\\u00b2\",           type = \"number\", format = \"sf:4\")\n  mockTable$addColumnInfo(name = \"pvalue\", title = \"p\",                      type = \"number\", format = \"dp:3;p:.001\")\n  mockTable$addColumnInfo(name = \"BF\",     title = gettext(\"Bayes Factor\"),  type = \"number\", format = \"sf:4\")\n  mockTable$addColumnInfo(name = \"sth\",    title = gettext(\"Some Title\"),    type = \"string\")\n\n  # Fill columns with data\n  mockTable[[\"chisq\"]]  &lt;- mockResults$column1\n  mockTable[[\"pvalue\"]] &lt;- mockResults$column2\n  mockTable[[\"BF\"]]     &lt;- mockResults$column3\n  mockTable[[\"sth\"]]    &lt;- mockResults$sometext\n}\n\n.mockTableSthElse &lt;- function(jaspResults, options, mockResults) {\n  if (!is.null(jaspResults[[\"mockMainContainer\"]][[\"mockTable2\"]])) return()\n\n  mockTable2 &lt;- createJaspTable(title = gettext(\"Mock Table Something Else\"))\n  mockTable2$dependOn(c(\"variables\", \"someotheroption\"))\n\n  jaspResults[[\"mockMainContainer\"]][[\"mockTable2\"]] &lt;- mockTable2\n\n  mockTable2$addColumnInfo(name = \"hallo\", title = \"Hallo\", type = \"string\")\n  mockTable2$addColumnInfo(name = \"doei\",  title = \"Doei\",  type = \"string\")\n\n  mockSummary &lt;- summary(mockResults$someObject)\n\n  mockTable2[[\"hallo\"]] &lt;- ifelse(mockSummary$hallo &gt; 1, \"Hallo!\", \"Hello!\")\n  mockTable2[[\"doei\"]]  &lt;- mockSummary$doei^2\n}\n\n.mockPlotSomething &lt;- function(jaspResults, options, mockResults) {\n  if (!is.null(jaspResults[[\"mockPlot\"]])) return()\n\n  mockPlot &lt;- createJaspPlot(title = gettext(\"Mock Plot\"), height = 320, width = 480)\n  mockPlot$dependOn(c(\"variables\", \"someotheroption\"))\n\n  jaspResults[[\"mockPlot\"]] &lt;- mockPlot\n\n  # Assign a ggplot2 object (preferred) or base R plot\n  mockPlot$plotObject &lt;- plot(mockResults$someObject)\n}\n\nA.0.1 Key Patterns\n\n\n\n\n\n\n\nPattern\nWhy\n\n\n\n\nPublic function (MockAnalysis) has no . prefix\nIt is called from QML via Description.qml\n\n\nPrivate helpers start with .\nHides them from the module NAMESPACE\n\n\nif (!is.null(...)) return() at start of output functions\nAvoids recreating cached output\n\n\n$dependOn(...) on every element\nTells JASP when to recompute\n\n\ncreateJaspState() for expensive results\nCaches computation across reactive reruns\n\n\ngettext() on all display strings\nEnables translation\n\n\nUnicode \\uXXXX for special characters\nPortable across locales"
+  },
+  {
+    "objectID": "appendix-qml-style.html",
+    "href": "appendix-qml-style.html",
+    "title": "Appendix B — QML Style Example",
+    "section": "",
+    "text": "This annotated example demonstrates the approved QML coding style for JASP module forms.\n// Every QML form should have Form as its root element.\n// Indent with tabs (4-space width), not spaces.\n// Opening braces go on their own line, aligned with the closing brace.\n\nimport QtQuick\nimport QtQuick.Layouts\nimport JASP.Controls\n\nForm\n{\n    Group\n    {\n        title: qsTr(\"A nice grouping of elements\")\n\n        // Multiple properties: each on its own line,\n        // values aligned at the same indent for readability.\n        IntegerField\n        {\n            id:             theRightWayForSpecifyingProperties\n            name:           \"someInteger\"\n            defaultValue:   1\n            min:            0\n            max:            123\n            text:           qsTr(\"You can enter an integer here: \")\n            fieldWidth:     100\n            toolTip:        qsTr(\"This is an incredibly useful tooltip right?\")\n        }\n\n        // Exception: simple elements with few properties can be one-liners.\n        // Align properties across lines for visual consistency.\n        Group\n        {\n            id: someCheckBoxes\n\n            CheckBox { name: \"checkBoxA\"; label: qsTr(\"The first checkbox\"); checked: true }\n            CheckBox { name: \"checkBoxB\"; label: qsTr(\"The second checkbox\")               }\n            CheckBox { name: \"checkBoxC\"; label: qsTr(\"The last checkbox\")                  }\n        }\n\n        // Variable lists also commonly use the one-liner pattern.\n        VariablesForm\n        {\n            AvailableVariablesList { name: \"availableVariables\"                                                      }\n            AssignedVariablesList  { name: \"variables\"; title: qsTr(\"Variables\")                                     }\n            AssignedVariablesList  { name: \"splitby\";   title: qsTr(\"Split\"); singleVariable: true;\n                                    allowedColumns: [\"ordinal\", \"nominal\"]                                           }\n        }\n\n        // In most cases, follow the multi-line style shown at IntegerField above.\n    }\n}\n\nB.0.1 Style Rules Summary\n\n\n\n\n\n\n\nRule\nDetail\n\n\n\n\nIndentation\nTabs (4-space width), never spaces\n\n\nBraces\nOpening { on own line, vertically aligned with closing }\n\n\nMulti-property elements\nEach property on own line, values aligned\n\n\nOne-liner exception\nSimple elements (CheckBox, VariablesList) with ≤ 3 short properties\n\n\nOne-liner alignment\nAlign property values across stacked one-liners\n\n\nStrings\nWrap all user-visible text in qsTr()\n\n\nSpacing\nOne blank line between subitems / property groups"
+  },
+  {
+    "objectID": "appendix-option-names.html#naming-rules-recap",
+    "href": "appendix-option-names.html#naming-rules-recap",
+    "title": "Appendix C — Standardised Option Names Reference",
+    "section": "C.1 Naming Rules Recap",
+    "text": "C.1 Naming Rules Recap\n\ncamelCase — no underscores, dots, or kebab-case.\nSingular nouns — confidenceInterval, not confidenceIntervals.\nAbbreviations are words — capitalise only the first letter: Ci, Bf, Mcmc, Se, Qq, Pp.\nNouns, not verbs — histogramPlot, not plotHistogram.\nReserved names — data and formula must not be used as option names."
+  },
+  {
+    "objectID": "appendix-option-names.html#general-options",
+    "href": "appendix-option-names.html#general-options",
+    "title": "Appendix C — Standardised Option Names Reference",
+    "section": "C.2 General Options",
+    "text": "C.2 General Options\n\n\n\n\n\n\n\nName\nPurpose\n\n\n\n\nci\nConfidence/credible interval checkbox\n\n\nciLevel\nConfidence/credible interval level (e.g., 0.95)\n\n\nse\nStandard error\n\n\nsd\nStandard deviation\n\n\npredictionInterval\nPrediction interval checkbox\n\n\npredictionIntervalLevel\nPrediction interval level\n\n\ndependent\nDependent variable\n\n\nfixedFactors\nFixed factors variable list\n\n\nrandomFactors\nRandom factors variable list\n\n\ncovariates\nCovariates variable list\n\n\nweights\nWeights variable\n\n\nterms\nTerms (interactions); combine as needed: modelTerms, marginalMeanTerms, plotTerms\n\n\nnaAction\nMissing values handling. Values: pairwise, listwise, perAnalysis, perDependent\n\n\nalternative\nAlternative hypothesis. Values: twoSided, greater, less\n\n\ntestValue\nTest value for one-sample tests\n\n\nvovkSellke\nVovk-Sellke maximum p-ratio checkbox\n\n\nbootstrap\nBootstrapping checkbox\n\n\nbootstrapSamples\nNumber of bootstrap samples\n\n\nbootstrapType\nType of bootstrap\n\n\nsetSeed\nSet seed checkbox\n\n\nseed\nSeed value\n\n\nxAxis / yAxis\nVariable on x/y axis\n\n\nxAxisLabel / yAxisLabel\nCustom axis label text\n\n\nrSquared\nR² checkbox\n\n\neffectSize\nEffect size checkbox\n\n\npValue\np-value\n\n\nmax / min\nMaximum / minimum\n\n\ncolorPalette\nColour palette dropdown\n\n\n*SavedToData\nSuffix for options that save columns to the dataset (e.g., predictionSavedToData)"
+  },
+  {
+    "objectID": "appendix-option-names.html#bayesian-options",
+    "href": "appendix-option-names.html#bayesian-options",
+    "title": "Appendix C — Standardised Option Names Reference",
+    "section": "C.3 Bayesian Options",
+    "text": "C.3 Bayesian Options\n\n\n\n\n\n\n\nName\nPurpose\n\n\n\n\nsamplingMethod\nMCMC sampling type. Values: auto, manual, bas, mcmc\n\n\nsamples\nNumber of MCMC iterations\n\n\nburnin\nBurn-in samples\n\n\nthinning\nThinning factor\n\n\nchains\nNumber of chains\n\n\nbf\nBayes factor\n\n\nbfType\nBayes factor type (use via BayesFactorType{} component)\n\n\npriorPosteriorPlot\nPrior/posterior plot checkbox\n\n\npriorPosteriorPlotAdditionalInfo\nAdditional info on prior/posterior plot\n\n\nbfRobustnessPlot\nRobustness plot checkbox\n\n\nbfRobustnessPlotAdditionalInfo\nAdditional info on robustness plot\n\n\nbfSequentialPlot\nSequential analysis plot checkbox\n\n\nbfSequentialPlotRobustness\nRobustness check in sequential plot"
+  },
+  {
+    "objectID": "appendix-option-names.html#bayesian-prior-options",
+    "href": "appendix-option-names.html#bayesian-prior-options",
+    "title": "Appendix C — Standardised Option Names Reference",
+    "section": "C.4 Bayesian Prior Options",
+    "text": "C.4 Bayesian Prior Options\n\n\n\nName\nPurpose\n\n\n\n\ncauchyPrior\nCauchy prior checkbox/radio\n\n\ncauchyPriorLocation\nCauchy prior location\n\n\ncauchyPriorScale\nCauchy prior scale\n\n\nnormalPrior\nNormal prior checkbox/radio\n\n\nnormalPriorMean\nNormal prior mean\n\n\nnormalPriorSd\nNormal prior SD\n\n\ntPrior\nt-distribution prior checkbox/radio\n\n\ntPriorLocation\nt prior location\n\n\ntPriorScale\nt prior scale\n\n\ntPriorDf\nt prior degrees of freedom"
+  },
+  {
+    "objectID": "appendix-option-names.html#nesting-conventions",
+    "href": "appendix-option-names.html#nesting-conventions",
+    "title": "Appendix C — Standardised Option Names Reference",
+    "section": "C.5 Nesting Conventions",
+    "text": "C.5 Nesting Conventions\n\nC.5.1 Parent-child Prefixing\nWhen a child option belongs to a parent, prefix with the parent name:\nanalysis(\n  errorBar        = TRUE,\n  errorBarType    = \"ci\",\n  errorBarCiLevel = 0.95\n)\n\n\nC.5.2 Structurally Nested Options\nOptions nested inside a TabView or similar structure that are already grouped in a list do not need a prefix:\nanalysis(\n  models = list(\n    list(name = \"Model 1\", syntax = \"y ~ x1\"),\n    list(name = \"Model 2\", syntax = \"y ~ x1 + x2\")\n  )\n)\n\n\nC.5.3 RadioButton Values\nRadio button values are character strings — they must follow the same camelCase rules:\nRadioButtonGroup\n{\n    name: \"alternative\"\n    RadioButton { name: \"twoSided\"; label: qsTr(\"Group 1 ≠ Group 2\"); checked: true }\n    RadioButton { name: \"greater\";  label: qsTr(\"Group 1 &gt; Group 2\")                }\n    RadioButton { name: \"less\";     label: qsTr(\"Group 1 &lt; Group 2\")                }\n}"
+  },
+  {
+    "objectID": "appendix-errors.html#error-types",
+    "href": "appendix-errors.html#error-types",
+    "title": "Appendix D — Error Message Reference",
+    "section": "D.1 Error Types",
+    "text": "D.1 Error Types\n\nAnalysis error: displayed as a grey table with a prominent error message over the top. Used when no meaningful results can be reported.\nValue error: an NaN in the affected cell with a footnote explaining the issue. Used when most results are valid but specific values could not be computed."
+  },
+  {
+    "objectID": "appendix-errors.html#t-tests",
+    "href": "appendix-errors.html#t-tests",
+    "title": "Appendix D — Error Message Reference",
+    "section": "D.2 T-Tests",
+    "text": "D.2 T-Tests\n\nD.2.1 Independent Samples T-Test\nAnalysis errors:\n\nThe Grouping Variable must have 2 levels\n\nValue errors (t):\n\nt-statistic is undefined – the dependent variable contains infinity\nt-statistic is undefined – the grouping variable contains fewer than two levels once missing values in the dependent are excluded\nt-statistic is undefined – one or both levels of the dependent contains all the same value (zero variance)\nt-statistic is undefined – one or both levels of the dependent contain too few observations\n\nFootnotes:\n\nNote. All tests, variances of groups assumed equal\nNote. All tests, variances of groups not assumed equal\nNote. All tests, hypothesis is group X greater than group Y\nNote. All tests, hypothesis is group X fewer than group Y\nLevene’s test is significant (p &lt; .05), suggesting a violation of the equal variance assumption\n\n\n\nD.2.2 Bayesian Independent Samples T-Test\nAnalysis errors:\n\nThe Grouping Variable must have 2 levels\n\nValue errors (BF):\n\nBayes factor is undefined – the dependent variable contains infinity\nBayes factor is undefined – the grouping variable contains fewer than two levels once missing values in the dependent are excluded\nBayes factor is undefined – one or both levels of the dependent contain all the same value (zero variance)\nBayes factor is undefined – one or both levels of the dependent contain too few observations\n\n\n\nD.2.3 One Sample T-Test\nValue errors (t):\n\nt-statistic is undefined – the sample contains infinity\nt-statistic is undefined – the sample contains all the same value (zero variance)\nt-statistic is undefined – sample contains only one value\n\n\n\nD.2.4 Bayesian One Sample T-Test\nValue errors (BF):\n\nBayes factor is undefined – the sample contains infinity\nBayes factor is undefined – too few observations\n\n\n\nD.2.5 Paired Sample T-Test\nValue errors (t):\n\nt-statistic is undefined – one or both of the variables contain infinity\nt-statistic is undefined – one or both of the variables contain all the same value (zero variance)\nt-statistic is undefined – one or both of the variables contain only one value\n\n\n\nD.2.6 Bayesian Paired Sample T-Test\nValue errors (BF):\n\nBayes factor is undefined – one or both of the variables contain infinity\nBayes factor is undefined – one or both of the variables has too few observations (possibly only after missing values are excluded)"
+  },
+  {
+    "objectID": "appendix-errors.html#anova",
+    "href": "appendix-errors.html#anova",
+    "title": "Appendix D — Error Message Reference",
+    "section": "D.3 ANOVA",
+    "text": "D.3 ANOVA\n\nFactor(s) X, Y, Z contain(s) fewer than two levels (possibly only after rows with missing values are excluded)"
+  },
+  {
+    "objectID": "appendix-errors.html#classical-linear-regression",
+    "href": "appendix-errors.html#classical-linear-regression",
+    "title": "Appendix D — Error Message Reference",
+    "section": "D.4 Classical Linear Regression",
+    "text": "D.4 Classical Linear Regression\nValue errors (b):\n\nLeast squares regression model is undefined – there are no observations for the dependent variable (possibly only after rows with missing values are excluded)\nLeast squares regression model is undefined – the dependent variable contains all the same value (zero variance)\nLeast squares regression model is undefined – the independent variable(s) X, Y, Z contain(s) all the same value (zero variance)\nLeast squares regression model is undefined – the dependent variable contains infinity\nLeast squares regression model is undefined – the independent variable(s) X, Y, Z contain(s) infinity"
+  },
+  {
+    "objectID": "appendix-errors.html#bayesian-anova-ancova-rm-anova-linear-regression",
+    "href": "appendix-errors.html#bayesian-anova-ancova-rm-anova-linear-regression",
+    "title": "Appendix D — Error Message Reference",
+    "section": "D.5 Bayesian ANOVA / ANCOVA / RM-ANOVA / Linear Regression",
+    "text": "D.5 Bayesian ANOVA / ANCOVA / RM-ANOVA / Linear Regression\nValue errors (BF):\n\nBayes factor is undefined – all effects are specified as nuisance\nBayes factor is undefined – too few observations (possibly only after rows with missing values are excluded)\nBayes factor is undefined – the factor(s) X, Y, Z contain(s) fewer than two levels (possibly only after rows with missing values are excluded)\nBayes factor is undefined – the dependent variable contains infinity\nBayes factor is undefined – the null model could not be computed\nBayes factor could not be computed\n\nFootnotes:\n\nNote. All models include X, Y, Z"
+  },
+  {
+    "objectID": "appendix-errors.html#bayesian-correlation",
+    "href": "appendix-errors.html#bayesian-correlation",
+    "title": "Appendix D — Error Message Reference",
+    "section": "D.6 Bayesian Correlation",
+    "text": "D.6 Bayesian Correlation\nValue errors (r):\n\nSample correlation coefficient r is undefined – too few observations\nSample correlation coefficient r is undefined – one or more of the variables contain infinity\nSample correlation coefficient r is undefined – one or more of the variables contain all the same value (zero variance)"
+  },
+  {
+    "objectID": "appendix-errors.html#adding-new-error-messages",
+    "href": "appendix-errors.html#adding-new-error-messages",
+    "title": "Appendix D — Error Message Reference",
+    "section": "D.7 Adding New Error Messages",
+    "text": "D.7 Adding New Error Messages\nWhen creating a new error message:\n\nCheck this list first — reuse an existing message if it fits.\nIf no existing message fits, create one with a similar structure: \"[Statistic] is undefined -- [reason]\".\nAdd the new message to this appendix and include it in your pull request for review."
+  },
+  {
+    "objectID": "appendix-resources.html#prerequisites-map",
+    "href": "appendix-resources.html#prerequisites-map",
+    "title": "Appendix E — Learning Resources",
+    "section": "E.1 Prerequisites Map",
+    "text": "E.1 Prerequisites Map\nThe diagram below shows the minimum technical skills required for JASP module development and the optional advanced skills that extend from them.\n\n\n\n\ngraph TD\n    subgraph Minimum\n        git --&gt; github\n        R --&gt; Functions\n    end\n\n    Template --&gt; QML\n    Functions --&gt; Packaging"
+  },
+  {
+    "objectID": "appendix-resources.html#curated-learning-materials",
+    "href": "appendix-resources.html#curated-learning-materials",
+    "title": "Appendix E — Learning Resources",
+    "section": "E.2 Curated Learning Materials",
+    "text": "E.2 Curated Learning Materials\n\nE.2.1 Git and GitHub\nSoftware Carpentry: Version Control with Git\n\nLessons 1–6: learning Git\nLessons 7–9: learning GitHub\nLessons 10–14: optional (Lesson 14, “Using Git from RStudio”, is particularly relevant)\n\n\n\nE.2.2 R and Functions\nSoftware Carpentry: R for Reproducible Scientific Analysis\n\nLessons 1–9: R basics\nLesson 10: writing functions\nLessons 11–15: good but optional\n\n\n\nE.2.3 R Packaging\nSoftware Carpentry: R Packaging\n\nLessons 1–7: basics including unit testing and dependency management\nLessons 9–10: good but optional\n\n\n\nE.2.4 QML Interface Building\nThe best way to learn QML for JASP is by following the JASP Module Tutorial, which includes the ready-to-use jaspModuleTemplate."
+  },
+  {
+    "objectID": "appendix-resources.html#additional-references",
+    "href": "appendix-resources.html#additional-references",
+    "title": "Appendix E — Learning Resources",
+    "section": "E.3 Additional References",
+    "text": "E.3 Additional References\n\n\n\nTopic\nResource\n\n\n\n\nJASP module template\ngithub.com/jasp-stats/jaspModuleTemplate\n\n\nAgent instructions\ngithub.com/jasp-stats/jasp-agent-instructions\n\n\njaspTools (testing)\ngithub.com/jasp-stats/jaspTools\n\n\nJASP source code\ngithub.com/jasp-stats/jasp-desktop\n\n\nCommunity modules\ngithub.com/jasp-stats-modules\n\n\nMattermost (team chat)\nContact the JASP team for an invitation"
+  }
+]

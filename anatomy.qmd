@@ -1,0 +1,165 @@
+# Module Anatomy {#sec-anatomy}
+
+A JASP module is a standard R package with additional files in `inst/` for the graphical interface. If you're unfamiliar with R packaging, see [Appendix E](appendix-resources.qmd) for learning resources.
+
+## File structure
+
+```
+myModule/
+├── DESCRIPTION                # Package metadata and dependencies
+├── NAMESPACE                  # Exported analysis functions
+├── LICENSE
+├── README.md
+├── renv.lock                  # Dependency lockfile (optional)
+├── R/                         # R analysis functions
+│   ├── myAnalysis.R
+│   └── helperFunctions.R
+├── tests/                     # Unit tests (optional but recommended)
+│   └── testthat/
+│       ├── test-myAnalysis.R
+│       └── jaspfiles/         # .jasp files for auto-generated tests
+│           ├── library/
+│           ├── verified/
+│           └── other/
+│
+│  # ── Everything above is a standard R package ──
+│  # ── JASP-specific files below ──
+│
+└── inst/
+    ├── Description.qml        # Module menu configuration
+    ├── Upgrades.qml           # Backward compatibility (optional)
+    ├── qml/                   # Analysis option forms
+    │   ├── MyAnalysis.qml
+    │   └── ...
+    ├── help/                  # Help documentation (optional)
+    │   └── myanalysis.md
+    └── icons/                 # Module and analysis icons (optional)
+        └── myModule.svg
+```
+
+```{mermaid}
+graph TD
+  R["R functions"] -- imported via --> NAMESPACE
+  NAMESPACE -- called by --> qmls["QML files"]
+  qmls -- create --> Analyses
+  Analyses & help & icons -- coordinated by --> Desc["Description.qml"]
+  Desc -- creates --> Menu["Ribbon menu"]
+```
+
+## Description.qml {#sec-description-qml}
+
+This is the **main configuration file** that wires your module together. It defines the module's metadata and lists all analyses.
+
+```qml
+import QtQuick
+import JASP.Module
+
+Description
+{
+    title:       "Amazing Module"
+    description: "This module does amazing things."
+    version:     "0.1.0"
+    author:      "Your Name"
+    maintainer:  "Your Name <you@example.org>"
+    website:     "https://example.org"
+    license:     "GPL (>= 2)"
+
+    Analysis
+    {
+        title: "My Analysis"
+        qml:   "MyAnalysis.qml"
+        func:  "myAnalysis"
+    }
+}
+```
+
+### Description properties
+
+| Property | Description |
+|----------|-------------|
+| `title` | User-visible name in the ribbon bar |
+| `description` | Shown during module installation |
+| `version` | Module version (see @sec-versioning) |
+| `icon` | Filename of the ribbon icon (from `inst/icons/`) |
+| `requiresData` | Whether the module needs a dataset (default: `true`) |
+| `preloadData` | Whether JASP passes the dataset directly to R functions (default: `true`, recommended). See @sec-preload-data |
+
+### Analysis entries
+
+Each `Analysis` block maps a menu item to a QML form and an R function:
+
+| Field | Description |
+|-------|-------------|
+| `title` | Analysis name (shown in output headers) |
+| `func` | R function name — must match an exported function in `NAMESPACE` |
+| `qml` | QML filename in `inst/qml/`. Defaults to `func + ".qml"` if omitted |
+| `menu` | Optional shorter text for the dropdown menu |
+| `icon` | Optional analysis-specific icon |
+| `preloadData` | Optional: override the module-level `preloadData` for this analysis. Set to `false` for analyses where column names can't be inferred from options (e.g., SEM, JAGS) |
+
+### GroupTitle and Separator
+
+Use `GroupTitle` and `Separator` to organise the menu:
+
+```qml
+GroupTitle { title: "Classical"; icon: "classical.svg" }
+Analysis   { title: "T-Test"; func: "tTest" }
+Separator  {}
+GroupTitle { title: "Bayesian"; icon: "bayesian.svg" }
+Analysis   { title: "Bayesian T-Test"; func: "tTestBayesian" }
+```
+
+## R/ directory {#sec-r-dir}
+
+Place your R files here. Each analysis typically has its own file. The **main function name must match** the `func` field in `Description.qml`. See @sec-r-backend for the full guide.
+
+## inst/qml/ directory {#sec-qml-dir}
+
+One QML file per analysis defines the user-facing options panel. The filename should match the `qml` field in `Description.qml`. See @sec-qml for the full guide.
+
+## inst/help/ directory {#sec-help-dir}
+
+Markdown help files, one per analysis. The filename must match the analysis function name **in lowercase** (e.g., `myanalysis.md` for `myAnalysis`).
+
+- **Images**: use `%HELP_FOLDER%/img/picture.png` to reference images within the help folder
+- **Math**: use `$...$` for inline and `$$...$$` for block LaTeX expressions
+- **R code**: use ` ```r ``` ` fenced code blocks
+
+## inst/icons/ directory
+
+SVG format preferred (scales well on all displays). PNG/JPG are acceptable but may look poor at some resolutions. Reference icons by filename only (no path) in `Description.qml`.
+
+## DESCRIPTION file {#sec-description-file}
+
+Standard R package metadata. JASP uses the `Imports` field to determine which CRAN packages to install. Example:
+
+```
+Package: jaspMyModule
+Type: Package
+Title: My JASP Module
+Version: 0.1.0
+Author: Your Name
+Maintainer: Your Name <you@example.org>
+Description: Does amazing statistical analyses.
+License: GPL (>= 2)
+Encoding: UTF-8
+Imports:
+    jaspBase,
+    jaspGraphs,
+    ggplot2
+```
+
+## NAMESPACE file
+
+Every main analysis function must be exported:
+
+```r
+export(myAnalysis)
+export(myOtherAnalysis)
+```
+
+If you use `roxygen2`, add `#' @export` above each main function and run `devtools::document()`.
+
+## Upgrades.qml
+
+Optional file for backward compatibility when you rename or restructure options between versions. See @sec-upgrades for details.

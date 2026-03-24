@@ -1,0 +1,136 @@
+# Connecting QML to R {#sec-qml-r}
+
+Understanding how QML, Description.qml, and R functions are wired together is essential for module development.
+
+## The reactive loop
+
+JASP implements a reactive loop between the interface and the analysis engine:
+
+```{mermaid}
+sequenceDiagram
+    participant User
+    participant QML as QML Form
+    participant Desktop as JASP Desktop
+    participant Engine as R Engine
+
+    User->>QML: Changes an option
+    QML->>Desktop: Updated options object
+    Desktop->>Engine: Calls R function with (jaspResults, dataset, options)
+    Engine->>Desktop: Updated jaspResults (tables, plots, state)
+    Desktop->>User: Renders output
+```
+
+Every time a user changes any option, JASP re-invokes the R analysis function with the full, updated `options` list. The `jaspResults` caching mechanism prevents redundant computation — only outputs whose dependencies changed are recomputed.
+
+## How components map to R options
+
+Each QML component with a `name` property becomes a key in the `options` list passed to R:
+
+| QML | R |
+|-----|---|
+| `CheckBox { name: "descriptives" }` | `options[["descriptives"]]` → `TRUE`/`FALSE` |
+| `RadioButtonGroup { name: "alternative" }` with `RadioButton { value: "greater" }` | `options[["alternative"]]` → `"greater"` |
+| `DoubleField { name: "ciLevel"; defaultValue: 0.95 }` | `options[["ciLevel"]]` → `0.95` |
+| `AssignedVariablesList { name: "variables" }` | `options[["variables"]]` → character vector |
+| `AssignedVariablesList { name: "dependent"; singleVariable: true }` | `options[["dependent"]]` → single string |
+| `TextField { name: "title" }` | `options[["title"]]` → string |
+| `DropDown { name: "method" }` | `options[["method"]]` → selected value string |
+
+## The wiring: Description.qml → QML → R
+
+`Description.qml` ties everything together:
+
+```qml
+// inst/Description.qml
+Analysis
+{
+    title: "My T-Test"
+    func:  "myTTest"       // ← must match R function name (exported in NAMESPACE)
+    qml:   "MyTTest.qml"   // ← must match file in inst/qml/
+}
+```
+
+```
+inst/Description.qml  ──→  inst/qml/MyTTest.qml  ──→  R/myTTest.R
+     (menu entry)              (options form)          (analysis function)
+```
+
+When a user clicks the analysis in the menu:
+
+1. JASP loads `inst/qml/MyTTest.qml` and displays the form
+2. User configures options
+3. JASP calls `myTTest(jaspResults, dataset, options)` in R
+4. The R function reads `options`, computes, and populates `jaspResults`
+
+## Option name consistency
+
+The `name` in QML **must exactly match** what you access in R. This is the single source of truth:
+
+```qml
+// QML
+CheckBox { name: "meanDifference"; label: qsTr("Mean difference") }
+CIField  { name: "meanDifferenceCiLevel" }
+```
+
+```r
+# R
+if (options[["meanDifference"]]) {
+  ciLevel <- options[["meanDifferenceCiLevel"]]
+  # ...
+}
+```
+
+See @sec-coding-standards for naming conventions.
+
+## Dependencies and caching
+
+The `$dependOn()` calls in R reference option names from QML. When a listed option changes, the associated output element is invalidated and recomputed:
+
+```r
+table$dependOn(c("variables", "ciLevel", "alternative"))
+```
+
+This means: rebuild this table whenever `variables`, `ciLevel`, or `alternative` changes in the QML form.
+
+Dependencies can also be set on containers (inherited by all children) and with `optionContainsValue` for per-value granularity:
+
+```r
+# Only invalidate this plot if "age" is removed from the variables list
+plot$dependOn(optionContainsValue = list(variables = "age"))
+```
+
+## The dataset {#sec-dataset-preload}
+
+By default (`preloadData: true` in `Description.qml`), JASP preloads the dataset and passes it to your R function via the `dataset` argument. **This is the preferred way to handle data.** Columns are automatically converted to the types requested by QML components — if an `AssignedVariablesList` has `allowedColumns: ["scale"]`, those columns arrive in R as numeric.
+
+This replaces the legacy `readDataSetToEnd()` approach. Where you previously did listwise deletion during read:
+
+```r
+# Old approach (no longer recommended):
+dataset <- readDataSetToEnd(columns = ..., exclude.na.listwise = exclude)
+```
+
+You now use:
+
+```r
+# New approach with preloadData:
+dataset <- jaspBase::excludeNaListwise(dataset, exclude)
+```
+
+To disable preloading for analyses where JASP cannot infer column names from the options (e.g., SEM, JAGS): set `preloadData: false` in `Description.qml` for that specific analysis. Then read data manually in R. See @sec-preload-data for full details.
+
+### Unit tests with preloaded data
+
+Since `readDataSetToEnd()` no longer converts column types, you may need to specify types explicitly in unit tests. There are three ways:
+
+1. **Add type information to options**: if `options$variables` contains the variables, add `options$variables.types` to specify the types
+2. **Use `jaspTools::addTypedDataSet()`**: pass a named list like `list(var1 = "scale", var2 = "nominal")` — useful when reusing one dataset across many tests
+3. **Convert manually**: if passing a dataset directly (not a filename), call `as.factor()` or `as.ordered()` yourself before passing it
+
+## Summary: adding a new analysis
+
+1. Add an `Analysis` entry in `inst/Description.qml` with `func` and `qml`
+2. Create `inst/qml/MyAnalysis.qml` with the options form
+3. Create `R/myAnalysis.R` with the analysis function
+4. Export `myAnalysis` in `NAMESPACE`
+5. Recompile and refresh in JASP

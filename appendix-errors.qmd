@@ -1,0 +1,119 @@
+# Error Message Reference {#sec-appendix-errors}
+
+This catalogue lists the standardised error messages used across JASP modules. When your analysis encounters one of these situations, use the exact phrasing listed here. This ensures consistency and helps users generalise their understanding across analyses.
+
+## Error Types
+
+- **Analysis error**: displayed as a grey table with a prominent error message over the top. Used when no meaningful results can be reported.
+- **Value error**: an `NaN` in the affected cell with a footnote explaining the issue. Used when most results are valid but specific values could not be computed.
+
+## T-Tests
+
+### Independent Samples T-Test
+
+**Analysis errors:**
+
+- The Grouping Variable must have 2 levels
+
+**Value errors (*t*):**
+
+- t-statistic is undefined -- the dependent variable contains infinity
+- t-statistic is undefined -- the grouping variable contains fewer than two levels once missing values in the dependent are excluded
+- t-statistic is undefined -- one or both levels of the dependent contains all the same value (zero variance)
+- t-statistic is undefined -- one or both levels of the dependent contain too few observations
+
+**Footnotes:**
+
+- *Note.* All tests, variances of groups assumed equal
+- *Note.* All tests, variances of groups not assumed equal
+- *Note.* All tests, hypothesis is group *X* greater than group *Y*
+- *Note.* All tests, hypothesis is group *X* fewer than group *Y*
+- Levene's test is significant (p < .05), suggesting a violation of the equal variance assumption
+
+### Bayesian Independent Samples T-Test
+
+**Analysis errors:**
+
+- The Grouping Variable must have 2 levels
+
+**Value errors (*BF*):**
+
+- Bayes factor is undefined -- the dependent variable contains infinity
+- Bayes factor is undefined -- the grouping variable contains fewer than two levels once missing values in the dependent are excluded
+- Bayes factor is undefined -- one or both levels of the dependent contain all the same value (zero variance)
+- Bayes factor is undefined -- one or both levels of the dependent contain too few observations
+
+### One Sample T-Test
+
+**Value errors (*t*):**
+
+- t-statistic is undefined -- the sample contains infinity
+- t-statistic is undefined -- the sample contains all the same value (zero variance)
+- t-statistic is undefined -- sample contains only one value
+
+### Bayesian One Sample T-Test
+
+**Value errors (*BF*):**
+
+- Bayes factor is undefined -- the sample contains infinity
+- Bayes factor is undefined -- too few observations
+
+### Paired Sample T-Test
+
+**Value errors (*t*):**
+
+- t-statistic is undefined -- one or both of the variables contain infinity
+- t-statistic is undefined -- one or both of the variables contain all the same value (zero variance)
+- t-statistic is undefined -- one or both of the variables contain only one value
+
+### Bayesian Paired Sample T-Test
+
+**Value errors (*BF*):**
+
+- Bayes factor is undefined -- one or both of the variables contain infinity
+- Bayes factor is undefined -- one or both of the variables has too few observations (possibly only after missing values are excluded)
+
+## ANOVA
+
+- Factor(s) *X, Y, Z* contain(s) fewer than two levels (possibly only after rows with missing values are excluded)
+
+## Classical Linear Regression
+
+**Value errors (*b*):**
+
+- Least squares regression model is undefined -- there are no observations for the dependent variable (possibly only after rows with missing values are excluded)
+- Least squares regression model is undefined -- the dependent variable contains all the same value (zero variance)
+- Least squares regression model is undefined -- the independent variable(s) *X, Y, Z* contain(s) all the same value (zero variance)
+- Least squares regression model is undefined -- the dependent variable contains infinity
+- Least squares regression model is undefined -- the independent variable(s) *X, Y, Z* contain(s) infinity
+
+## Bayesian ANOVA / ANCOVA / RM-ANOVA / Linear Regression
+
+**Value errors (*BF*):**
+
+- Bayes factor is undefined -- all effects are specified as nuisance
+- Bayes factor is undefined -- too few observations (possibly only after rows with missing values are excluded)
+- Bayes factor is undefined -- the factor(s) *X, Y, Z* contain(s) fewer than two levels (possibly only after rows with missing values are excluded)
+- Bayes factor is undefined -- the dependent variable contains infinity
+- Bayes factor is undefined -- the null model could not be computed
+- Bayes factor could not be computed
+
+**Footnotes:**
+
+- *Note.* All models include *X, Y, Z*
+
+## Bayesian Correlation
+
+**Value errors (*r*):**
+
+- Sample correlation coefficient r is undefined -- too few observations
+- Sample correlation coefficient r is undefined -- one or more of the variables contain infinity
+- Sample correlation coefficient r is undefined -- one or more of the variables contain all the same value (zero variance)
+
+## Adding New Error Messages
+
+When creating a new error message:
+
+1. Check this list first — reuse an existing message if it fits.
+2. If no existing message fits, create one with a similar structure: `"[Statistic] is undefined -- [reason]"`.
+3. Add the new message to this appendix and include it in your pull request for review.

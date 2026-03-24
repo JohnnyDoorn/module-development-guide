@@ -1,0 +1,105 @@
+# Licensing {#sec-licensing}
+
+JASP is open-source software with a dual-license structure. Understanding these licenses ensures your module and contributions carry the correct headers.
+
+## License Structure
+
+| Component | License | Scope |
+|-----------|---------|-------|
+| JASP Desktop (GUI) | **AGPL-3.0-or-later** | Desktop binary, built from `Desktop/` + `Common/` |
+| JASP Engine | **GPL-2.0-or-later** | Engine binary, built from `Engine/` + `Common/` |
+| Common code | **GPL-2.0-or-later** | Shared between Desktop and Engine |
+| R module code | **GPL-2.0-or-later** | Analysis R files, QML files |
+
+### Why Two Licenses?
+
+The GUI uses AGPL-3+ to ensure that any hosted version of JASP (e.g., a web service) must also share its source code. The Engine uses GPL-2+ because R itself is GPL-licensed, and the engine links directly with R.
+
+## Copyright Headers
+
+Every source file must have a copyright and license header.
+
+### R Files (.R)
+
+```r
+#
+# Copyright (C) 2024 University of Amsterdam
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+```
+
+### C++ / QML Files (Desktop — AGPL)
+
+```cpp
+//
+// Copyright (C) 2024 University of Amsterdam
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public
+// License along with this program.  If not, see
+// <http://www.gnu.org/licenses/>.
+//
+```
+
+### C++ Files (Engine/Common — GPL)
+
+```cpp
+//
+// Copyright (C) 2024 University of Amsterdam
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+```
+
+## Who Holds Copyright?
+
+| Contributor type | Copyright line |
+|-----------------|---------------|
+| University of Amsterdam employee | `Copyright (C) YEAR University of Amsterdam` |
+| External contributor | `Copyright (C) YEAR Your Full Name` |
+| Modifying an existing file | Add your name/organization below the existing copyright |
+
+## For Module Authors
+
+If you are writing a **community module**, you choose the license. However:
+
+- R code that uses `jaspResults` (GPL-2+) must be GPL-2+ compatible.
+- If you want your module to be adopted as an official JASP module in the future, use GPL-2+ from the start.
+
+Set the license in your `DESCRIPTION` file:
+
+```
+License: GPL (>= 2)
+```

@@ -1,0 +1,167 @@
+# Running & Debugging with jaspTools {#sec-jasptools-workflow}
+
+While JASP provides a polished GUI for end users, as a module developer your fastest iteration loop runs **outside JASP** entirely — using `jaspTools` in an R console. This lets you execute analyses, inspect results, set breakpoints with `browser()`, and step through your code line by line.
+
+## Setup
+
+```r
+# Install jaspTools (one-time)
+remotes::install_github("jasp-stats/jaspTools")
+library(jaspTools)
+```
+
+After loading `jaspTools`, it automatically finds your module if you opened the R session from the module's root directory (or you can point it manually).
+
+## Running an Analysis from R
+
+```r
+library(jaspTools)
+
+# Get the default options for your analysis
+options <- analysisOptions("TTestIndependentSamples")
+
+# Override the options you care about
+options$dependent         <- "contNormal"
+options$groupingVariable  <- "facGender"
+options$meanDifference    <- TRUE
+options$effectSize        <- TRUE
+
+# Run the analysis against a test dataset
+results <- runAnalysis("TTestIndependentSamples", "test.csv", options)
+```
+
+The `results` object is a nested list mirroring what JASP renders. You can explore it interactively:
+
+```r
+# Check status
+results[["status"]]
+
+# Inspect a specific table
+results[["results"]][["ttest"]][["data"]]
+
+# Check for errors
+results[["results"]][["ttest"]][["error"]]
+```
+
+This is dramatically faster than recompiling, refreshing JASP, and clicking through the UI for every change.
+
+## Debugging with browser()
+
+R's built-in `browser()` function is your most powerful debugging tool. Insert it anywhere in your analysis code to pause execution and drop into an interactive debugger:
+
+```r
+.computeResults <- function(jaspResults, dataset, options) {
+  browser()  # Execution pauses here — inspect variables interactively
+
+  model <- lm(as.formula(options[["formula"]]), data = dataset)
+  # ...
+}
+```
+
+When you run the analysis via `jaspTools::runAnalysis()`, R will pause at the `browser()` line. You can then:
+
+| Command | Action |
+|---------|--------|
+| `n` | Execute the **n**ext line |
+| `s` | **S**tep into a function call |
+| `c` | **C**ontinue execution until the next `browser()` or end |
+| `Q` | **Q**uit the debugger |
+| Any R expression | Evaluate it in the current scope |
+
+### Typical Debugging Session
+
+```r
+library(jaspTools)
+
+# 1. Add browser() in your R file where you suspect the issue
+# 2. Reinstall the module:
+#    R CMD INSTALL . --preclean --no-multiarch --with-keep.source
+
+# 3. Run from R console:
+options <- analysisOptions("MyAnalysis")
+options$dependent <- "contNormal"
+results <- runAnalysis("MyAnalysis", "test.csv", options)
+
+# Execution pauses at browser(). Now you can:
+#   - Type variable names to inspect them
+#   - Run str(dataset) to see the data structure
+#   - Run head(options) to verify option values
+#   - Step through line by line with 'n'
+```
+
+::: {.callout-tip}
+### Remember to Remove browser() Calls
+Remove all `browser()` calls before committing. They will cause the JASP engine to hang if left in production code.
+:::
+
+## Inspecting jaspResults Objects
+
+When paused in the debugger, you can inspect `jaspResults` elements:
+
+```r
+# See what's already in jaspResults
+names(jaspResults)
+
+# Check if a table exists (caching)
+is.null(jaspResults[["myTable"]])
+
+# Inspect a cached state object
+jaspResults[["stateResults"]]$object
+```
+
+## The Full Development Loop
+
+For day-to-day R code development, this loop is much faster than working through JASP's GUI:
+
+```{mermaid}
+flowchart LR
+    A[Edit R code] --> B[R CMD INSTALL .]
+    B --> C["runAnalysis() in R console"]
+    C --> D{Works?}
+    D -- No --> E["Add browser(), re-install"]
+    E --> C
+    D -- Yes --> F[Test in JASP GUI]
+```
+
+1. **Edit** your `.R` file.
+2. **Install**: `R CMD INSTALL . --preclean --no-multiarch --with-keep.source`
+3. **Run**: `jaspTools::runAnalysis("MyAnalysis", "test.csv", options)` — check the output.
+4. **Debug**: if something is wrong, add `browser()` at the suspect location, reinstall, and re-run.
+5. **Verify in JASP**: once the R output looks correct, refresh the module in JASP to check the full UI experience (state caching, plot rendering, error display).
+
+Step 5 is important because some issues — like state caching between option changes, or how containers render in the results panel — only manifest inside JASP itself.
+
+## Quick renv Setup for jaspTools
+
+If your module uses renv (which it should — see @sec-renv), run this bootstrap before using jaspTools:
+
+```r
+Sys.setenv(GITHUB_PAT = "<your PAT>")
+
+if (is.null(renv::project())) {
+  message("This isn't an active renv project.")
+  renv::activate()
+} else {
+  message("We're in an active renv project.")
+}
+
+message("Restoring/synchronizing the project library.")
+renv::restore()
+
+message("Installing the package.")
+renv::install(".")
+
+message("R libPath for developer mode:\n", .libPaths()[1])
+```
+
+The last line prints the library path for your installed module. This is the path you enter in JASP's **Preferences → Advanced → Developer mode → libpath** so JASP loads your locally built module.
+
+## Common Pitfalls
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `runAnalysis()` returns old results | Module not reinstalled after editing | Run `R CMD INSTALL .` again |
+| `browser()` doesn't trigger | Running a cached code path (`if (!is.null(...)) return()`) | Clear jaspResults state or change a dependency option |
+| Options don't match QML | Typo in option name | Compare `names(analysisOptions("X"))` against your QML `name:` values |
+| `Error: package 'X' not found` | renv library not restored | Run `renv::restore()` first |
+| Results differ from JASP | Dataset encoding differences | Use the same dataset file; check `.readDataSetToEnd()` column types |

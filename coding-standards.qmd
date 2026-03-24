@@ -1,0 +1,156 @@
+# Coding Standards {#sec-coding-standards}
+
+Consistent style makes code easier to review, maintain, and contribute to. JASP enforces conventions for both R and QML code, as well as standardised option names that bridge the two.
+
+## R Style Guide {#sec-r-style}
+
+### Naming
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Functions | `camelCase`, verb + noun | `computeMeanDifference()` |
+| Local variables | `camelCase` | `effectSize` |
+| Constants | `camelCase` (same as variables) | `maxIterations` |
+| Files | `analysisname.R` (lowercase) | `ttestindependentsamples.R` |
+
+### Formatting
+
+- **Indentation**: 2 spaces (no tabs).
+- **Line length**: ≤ 120 characters.
+- **Assignment**: Use `<-`, not `=`.
+- **Spacing**: Space after commas, around operators (`+`, `-`, `<-`, `==`), but not inside parentheses.
+- **Braces**: Opening `{` on the same line; closing `}` on its own line.
+- **Strings**: Use double quotes `"` consistently.
+
+```r
+# Good
+.computeResults <- function(jaspResults, dataset, options) {
+  if (options[["meanDifference"]])
+    table$addColumnInfo(name = "meanDiff", title = gettext("Mean Difference"), type = "number")
+}
+
+# Bad
+.computeResults = function( jaspResults,dataset,options ){
+  if(options[['meanDifference']])
+    table$addColumnInfo(name='meanDiff',title=gettext('Mean Difference'),type='number')
+}
+```
+
+### Functions
+
+- Internal (private) helper functions start with a dot: `.computeResults()`.
+- The main entry point (called from QML) is the only public function without a dot.
+- Avoid deeply nested `if`/`else` chains — use early returns or helper functions.
+- Use `options[["optionName"]]` (double brackets), never `options$optionName`.
+
+### Comments
+
+- Use `#` followed by a space.
+- Comment *why*, not *what* — the code itself should show what it does.
+
+## QML Style Guide {#sec-qml-style}
+
+### Formatting
+
+- **Indentation**: Tabs (4-space width).
+- **Braces**: Opening `{` on its own line, vertically aligned with the closing `}`.
+
+```qml
+// Good
+Group
+{
+    title: qsTr("Options")
+    CheckBox { name: "meanDifference"; label: qsTr("Mean difference") }
+
+    IntegerField
+    {
+        name:         "ciWidth"
+        label:        qsTr("Confidence interval")
+        defaultValue: 95
+        min:          50
+        max:          99
+    }
+}
+```
+
+### Property Alignment
+
+When a QML element has multiple properties, align property values vertically:
+
+```qml
+IntegerField
+{
+    name:         "bootstrapSamples"
+    label:        qsTr("Bootstrap samples")
+    defaultValue: 1000
+    min:          100
+    max:          1000000
+}
+```
+
+### One-liner Elements
+
+Simple elements with 1–3 short properties may go on a single line:
+
+```qml
+CheckBox { name: "meanDifference"; label: qsTr("Mean difference") }
+CheckBox { name: "effectSize";     label: qsTr("Effect size")     }
+```
+
+When stacking one-liners, align property values across lines for readability.
+
+### Strings
+
+Wrap **all** user-visible strings in `qsTr()` for translation (see @sec-i18n).
+
+## Option Naming Conventions {#sec-option-names}
+
+Option names appear in QML (`name:` property), flow to R via `options[["name"]]`, and persist in `.jasp` files. Consistent naming is essential for long-term compatibility.
+
+### Rules
+
+1. **camelCase** — no underscores, no dots, no kebab-case.
+2. **Singular nouns** — `confidenceInterval`, not `confidenceIntervals`.
+3. **Abbreviations are words** — capitalise only the first letter: `Ci`, not `CI`; `Bf`, not `BF`; `Mcmc`, not `MCMC`.
+4. **Be specific but concise** — `descriptivesTableCi` rather than `ci` when ambiguous.
+5. **Boolean options** — name describes the thing being toggled, not the action: `meanDifference` (not `showMeanDifference`).
+
+### Common Standardised Names
+
+Use these names wherever the concept applies — do not invent synonyms:
+
+| Concept | Standard Name |
+|---------|--------------|
+| Confidence interval width | `ciWidth` |
+| Credible interval width | `credibleIntervalWidth` |
+| Descriptives table | `descriptivesTable` |
+| Effect size | `effectSize` |
+| Bayes factor direction | `bayesFactorType` |
+| Missing values handling | `missingValues` |
+| Sample sizes | `sampleSize` |
+| Bootstrap samples | `bootstrapSamples` |
+
+See @sec-appendix-option-names for the full reference table.
+
+### Variable List Names
+
+For `AssignedVariablesList`, name after the statistical role:
+
+| Role | Name |
+|------|------|
+| Dependent variable | `dependent` |
+| Independent / fixed factors | `fixedFactors` |
+| Random factors | `randomFactors` |
+| Covariates | `covariates` |
+| Grouping variable | `groupingVariable` |
+| Repeated measures | `repeatedMeasuresFactors` |
+| Weights | `weights` |
+
+## Applying Standards in Practice
+
+A practical workflow:
+
+1. **Before writing code**: scan @sec-appendix-option-names for existing names that match your options.
+2. **During development**: run a quick check — do your names follow camelCase, use singular nouns, and spell abbreviations as words?
+3. **During review**: compare against this chapter. Reviewers will flag deviations.
+4. **When renaming**: if an option name must change after release, provide an `Upgrades.qml` entry (see @sec-upgrades).

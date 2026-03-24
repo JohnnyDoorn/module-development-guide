@@ -1,0 +1,119 @@
+# Standardised Option Names Reference {#sec-appendix-option-names}
+
+Use these standardised names whenever the concept applies. Do not invent synonyms — consistency across modules enables a coherent syntax mode and simplifies code review.
+
+## Naming Rules Recap
+
+1. **camelCase** — no underscores, dots, or kebab-case.
+2. **Singular nouns** — `confidenceInterval`, not `confidenceIntervals`.
+3. **Abbreviations are words** — capitalise only the first letter: `Ci`, `Bf`, `Mcmc`, `Se`, `Qq`, `Pp`.
+4. **Nouns, not verbs** — `histogramPlot`, not `plotHistogram`.
+5. **Reserved names** — `data` and `formula` must not be used as option names.
+
+## General Options
+
+| Name | Purpose |
+|------|---------|
+| `ci` | Confidence/credible interval checkbox |
+| `ciLevel` | Confidence/credible interval level (e.g., 0.95) |
+| `se` | Standard error |
+| `sd` | Standard deviation |
+| `predictionInterval` | Prediction interval checkbox |
+| `predictionIntervalLevel` | Prediction interval level |
+| `dependent` | Dependent variable |
+| `fixedFactors` | Fixed factors variable list |
+| `randomFactors` | Random factors variable list |
+| `covariates` | Covariates variable list |
+| `weights` | Weights variable |
+| `terms` | Terms (interactions); combine as needed: `modelTerms`, `marginalMeanTerms`, `plotTerms` |
+| `naAction` | Missing values handling. Values: `pairwise`, `listwise`, `perAnalysis`, `perDependent` |
+| `alternative` | Alternative hypothesis. Values: `twoSided`, `greater`, `less` |
+| `testValue` | Test value for one-sample tests |
+| `vovkSellke` | Vovk-Sellke maximum p-ratio checkbox |
+| `bootstrap` | Bootstrapping checkbox |
+| `bootstrapSamples` | Number of bootstrap samples |
+| `bootstrapType` | Type of bootstrap |
+| `setSeed` | Set seed checkbox |
+| `seed` | Seed value |
+| `xAxis` / `yAxis` | Variable on x/y axis |
+| `xAxisLabel` / `yAxisLabel` | Custom axis label text |
+| `rSquared` | R² checkbox |
+| `effectSize` | Effect size checkbox |
+| `pValue` | p-value |
+| `max` / `min` | Maximum / minimum |
+| `colorPalette` | Colour palette dropdown |
+| `*SavedToData` | Suffix for options that save columns to the dataset (e.g., `predictionSavedToData`) |
+
+## Bayesian Options
+
+| Name | Purpose |
+|------|---------|
+| `samplingMethod` | MCMC sampling type. Values: `auto`, `manual`, `bas`, `mcmc` |
+| `samples` | Number of MCMC iterations |
+| `burnin` | Burn-in samples |
+| `thinning` | Thinning factor |
+| `chains` | Number of chains |
+| `bf` | Bayes factor |
+| `bfType` | Bayes factor type (use via `BayesFactorType{}` component) |
+| `priorPosteriorPlot` | Prior/posterior plot checkbox |
+| `priorPosteriorPlotAdditionalInfo` | Additional info on prior/posterior plot |
+| `bfRobustnessPlot` | Robustness plot checkbox |
+| `bfRobustnessPlotAdditionalInfo` | Additional info on robustness plot |
+| `bfSequentialPlot` | Sequential analysis plot checkbox |
+| `bfSequentialPlotRobustness` | Robustness check in sequential plot |
+
+## Bayesian Prior Options
+
+| Name | Purpose |
+|------|---------|
+| `cauchyPrior` | Cauchy prior checkbox/radio |
+| `cauchyPriorLocation` | Cauchy prior location |
+| `cauchyPriorScale` | Cauchy prior scale |
+| `normalPrior` | Normal prior checkbox/radio |
+| `normalPriorMean` | Normal prior mean |
+| `normalPriorSd` | Normal prior SD |
+| `tPrior` | t-distribution prior checkbox/radio |
+| `tPriorLocation` | t prior location |
+| `tPriorScale` | t prior scale |
+| `tPriorDf` | t prior degrees of freedom |
+
+## Nesting Conventions
+
+### Parent-child Prefixing
+
+When a child option belongs to a parent, prefix with the parent name:
+
+```r
+analysis(
+  errorBar        = TRUE,
+  errorBarType    = "ci",
+  errorBarCiLevel = 0.95
+)
+```
+
+### Structurally Nested Options
+
+Options nested inside a `TabView` or similar structure that are already grouped in a list do **not** need a prefix:
+
+```r
+analysis(
+  models = list(
+    list(name = "Model 1", syntax = "y ~ x1"),
+    list(name = "Model 2", syntax = "y ~ x1 + x2")
+  )
+)
+```
+
+### RadioButton Values
+
+Radio button values are character strings — they must follow the same camelCase rules:
+
+```qml
+RadioButtonGroup
+{
+    name: "alternative"
+    RadioButton { name: "twoSided"; label: qsTr("Group 1 ≠ Group 2"); checked: true }
+    RadioButton { name: "greater";  label: qsTr("Group 1 > Group 2")                }
+    RadioButton { name: "less";     label: qsTr("Group 1 < Group 2")                }
+}
+```

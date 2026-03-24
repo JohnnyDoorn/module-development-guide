@@ -1,0 +1,71 @@
+---
+title: "QML Style Example"
+---
+
+This annotated example demonstrates the approved QML coding style for JASP module forms.
+
+```qml
+// Every QML form should have Form as its root element.
+// Indent with tabs (4-space width), not spaces.
+// Opening braces go on their own line, aligned with the closing brace.
+
+import QtQuick
+import QtQuick.Layouts
+import JASP.Controls
+
+Form
+{
+    Group
+    {
+        title: qsTr("A nice grouping of elements")
+
+        // Multiple properties: each on its own line,
+        // values aligned at the same indent for readability.
+        IntegerField
+        {
+            id:             theRightWayForSpecifyingProperties
+            name:           "someInteger"
+            defaultValue:   1
+            min:            0
+            max:            123
+            text:           qsTr("You can enter an integer here: ")
+            fieldWidth:     100
+            toolTip:        qsTr("This is an incredibly useful tooltip right?")
+        }
+
+        // Exception: simple elements with few properties can be one-liners.
+        // Align properties across lines for visual consistency.
+        Group
+        {
+            id: someCheckBoxes
+
+            CheckBox { name: "checkBoxA"; label: qsTr("The first checkbox"); checked: true }
+            CheckBox { name: "checkBoxB"; label: qsTr("The second checkbox")               }
+            CheckBox { name: "checkBoxC"; label: qsTr("The last checkbox")                  }
+        }
+
+        // Variable lists also commonly use the one-liner pattern.
+        VariablesForm
+        {
+            AvailableVariablesList { name: "availableVariables"                                                      }
+            AssignedVariablesList  { name: "variables"; title: qsTr("Variables")                                     }
+            AssignedVariablesList  { name: "splitby";   title: qsTr("Split"); singleVariable: true;
+                                    allowedColumns: ["ordinal", "nominal"]                                           }
+        }
+
+        // In most cases, follow the multi-line style shown at IntegerField above.
+    }
+}
+```
+
+### Style Rules Summary
+
+| Rule | Detail |
+|------|--------|
+| **Indentation** | Tabs (4-space width), never spaces |
+| **Braces** | Opening `{` on own line, vertically aligned with closing `}` |
+| **Multi-property elements** | Each property on own line, values aligned |
+| **One-liner exception** | Simple elements (CheckBox, VariablesList) with ≤ 3 short properties |
+| **One-liner alignment** | Align property values across stacked one-liners |
+| **Strings** | Wrap all user-visible text in `qsTr()` |
+| **Spacing** | One blank line between subitems / property groups |

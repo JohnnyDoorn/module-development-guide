@@ -1,0 +1,91 @@
+# Publishing Your Module {#sec-publishing}
+
+This chapter covers how to submit a new community module, update an existing one, and what quality criteria to meet for both community and official JASP modules. {#sec-publishing}
+
+## Community Module Submission
+
+Community modules are listed in the [jasp-stats-modules](https://github.com/jasp-stats-modules) registry. To add your module:
+
+### Option 1: Contact the Team
+
+Open an issue or send a message on Mattermost. The JASP team will add it for you.
+
+### Option 2: Pull Request
+
+1. Fork the [`jasp-stats-modules`](https://github.com/jasp-stats-modules) registry repository.
+2. Add a YAML file in the `modules-metadata/` folder:
+   ```yaml
+   name: "YourModuleName"
+   gitUrl: "https://github.com/yourname/jaspYourModule"
+   ```
+3. Create a pull request.
+4. After review and merge, your module appears in the beta-modules registry.
+
+## Updating a Community Module
+
+When you have new features or bug fixes ready, open a **cross-fork pull request** from your repository to the JASP organization's fork:
+
+1. **Find the fork**: `https://github.com/jasp-stats-modules/YourModuleName`
+2. **Create cross-fork PR**:
+   - Go to the JASP fork → Pull Requests → New Pull Request
+   - Click **"compare across forks"**
+   - Set:
+     - Base repository: `jasp-stats-modules/YourModuleName` (JASP's fork)
+     - Base branch: `master` or `main`
+     - Head repository: `yourname/YourModuleName` (your repo)
+     - Compare branch: your update branch
+   - Click **Create pull request**
+3. **Review**: the JASP team reviews and may request adjustments.
+4. **Merge & sync**: once merged, automated systems build and publish a beta release.
+
+## Updating an Official Module
+
+Official modules (`jasp-stats/jasp*`) sync automatically:
+
+- Every push to the module repository triggers a beta bundle build.
+- For a proper release, ask a core programmer.
+- Update the `NEWS` file with a summary of changes before requesting a release.
+
+## Module Quality Checklists
+
+### Official JASP Module Checklist {#sec-checklist-official}
+
+::: {.callout-important}
+All items should be completed before requesting an official release.
+:::
+
+- [ ] **Unit tests** with ≥ 70% analysis coverage
+- [ ] Auto-generated tests from `.jasp` example files (`makeTestsFromExamples()`)
+- [ ] All tests pass in GitHub Actions CI (@sec-ci)
+- [ ] Complete **help files** for every analysis (`inst/help/`)
+- [ ] `info` properties on all QML elements for inline documentation
+- [ ] Informative **README** with module description and screenshots
+- [ ] **NEWS / changelog** file maintained and updated before each release
+- [ ] Option names follow naming conventions (@sec-option-names)
+- [ ] **Upgrades.qml** entries for any renamed/removed options (@sec-upgrades)
+- [ ] All user-visible strings wrapped for translation (@sec-i18n)
+- [ ] Correct **license headers** on all source files (@sec-licensing)
+- [ ] **R style** compliance (@sec-r-style)
+- [ ] **QML style** compliance (@sec-qml-style)
+- [ ] Standardised **error messages** (@sec-appendix-errors)
+
+### Community JASP Module Checklist {#sec-checklist-community}
+
+::: {.callout-note}
+These are the minimum requirements for a community module to be accepted into the registry.
+:::
+
+- [ ] At least **one test per analysis** that runs without error
+- [ ] **README** with module description and usage instructions
+- [ ] Working example `.jasp` files (in `tests/testthat/jaspfiles/` or `examples/`)
+- [ ] Module **installs and loads** without errors in current JASP nightly
+- [ ] Valid `DESCRIPTION` file with correct metadata (title, author, version, dependencies)
+- [ ] Valid `NAMESPACE` file (auto-generated or correct exports)
+- [ ] `Description.qml` with proper module name, description, version, and analysis entries
+
+### Optional but Recommended (Community)
+
+- [ ] Help files or `info` properties on QML elements
+- [ ] Translation-ready strings
+- [ ] GitHub Actions CI workflow
+- [ ] Upgrades.qml for backward compatibility

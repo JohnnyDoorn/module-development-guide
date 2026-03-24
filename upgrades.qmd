@@ -1,0 +1,209 @@
+# Backward Compatibility (Upgrades.qml) {#sec-upgrades}
+
+When you rename, remove, or restructure options between module versions, older `.jasp` files saved by users will contain outdated option names. The `Upgrades.qml` mechanism automatically transforms old options to the new format when a user opens an older file.
+
+## How It Works
+
+```{mermaid}
+flowchart LR
+    A[User opens old .jasp file] --> B{Saved version < current?}
+    B -- Yes --> C[Apply Upgrades.qml transforms]
+    C --> D[Analysis runs with updated options]
+    B -- No --> D
+```
+
+Place an `Upgrades.qml` file in `inst/` (alongside `Description.qml`). JASP chains upgrades automatically — if a file was saved at version 0.1 and the module is now at 0.4, JASP applies 0.1→0.2, then 0.2→0.3, then 0.3→0.4 in sequence.
+
+## File Structure
+
+```qml
+import QtQuick
+import JASP.Module
+
+Upgrades
+{
+    Upgrade
+    {
+        functionName:  "TTestIndependentSamples"
+        fromVersion:   "0.16"
+        toVersion:     "0.17"
+
+        ChangeRename { from: "confidenceInterval"; to: "ciWidth" }
+        ChangeSetValue { name: "effectSizeType"; jsonValue: "\"cohen\"" }
+    }
+
+    Upgrade
+    {
+        functionName:  "TTestIndependentSamples"
+        fromVersion:   "0.17"
+        toVersion:     "0.18"
+
+        ChangeRemove { name: "legacyOption" }
+    }
+}
+```
+
+## Change Types
+
+### ChangeRename
+
+Rename an option, preserving its value:
+
+```qml
+ChangeRename { from: "oldName"; to: "newName" }
+```
+
+### ChangeCopy
+
+Copy an option's value to a new name (original remains):
+
+```qml
+ChangeCopy { from: "source"; to: "target" }
+```
+
+### ChangeSetValue
+
+Set an option to a fixed value:
+
+```qml
+// String
+ChangeSetValue { name: "method"; jsonValue: "\"bootstrap\"" }
+
+// Number
+ChangeSetValue { name: "ciWidth"; jsonValue: "95" }
+
+// Boolean
+ChangeSetValue { name: "effectSize"; jsonValue: "true" }
+
+// Array
+ChangeSetValue { name: "variables"; jsonValue: "[\"x\", \"y\"]" }
+
+// Object
+ChangeSetValue { name: "config"; jsonValue: "{\"a\": 1, \"b\": 2}" }
+```
+
+::: {.callout-note}
+The `jsonValue` must be valid JSON wrapped in a QML string. String values need escaped inner quotes: `"\"value\""`.
+:::
+
+### ChangeJS
+
+Run a JavaScript function to compute the new value. The function receives the full `options` object (with all prior changes applied) and must return the new value:
+
+```qml
+ChangeJS
+{
+    name:     "newOption"
+    jsFunction: function(options)
+    {
+        // Convert a radio button value to separate booleans
+        if (options["oldRadio"] === "optionA")
+            return true;
+        return false;
+    }
+}
+```
+
+`ChangeJS` is the most powerful transform — use it when the conversion logic is non-trivial.
+
+#### Utility Functions
+
+Inside `ChangeJS`, you can use `qmlUtils` helpers:
+
+- `qmlUtils.encodeAllColumnNames(value)` — encode column names for internal storage.
+- `qmlUtils.decodeAllColumnNames(value)` — decode column names for display.
+- `qmlUtils.encodeJson(value)` / `qmlUtils.decodeJson(value)` — JSON serialization.
+
+### ChangeRemove
+
+Remove an option entirely:
+
+```qml
+ChangeRemove { name: "obsoleteOption" }
+```
+
+## Conditional Changes
+
+Add a `condition` to any change. The change only applies when the condition evaluates to `true`:
+
+```qml
+ChangeRename
+{
+    from: "oldName"
+    to:   "newName"
+    condition: function(options) { return options["someFlag"] === true; }
+}
+```
+
+If no `condition` is specified, it defaults to `true` (always applied).
+
+### Reusing Conditions
+
+Give a condition an `id` to reuse across multiple changes:
+
+```qml
+Upgrade
+{
+    functionName: "MyAnalysis"
+    fromVersion:  "0.2"
+    toVersion:    "0.3"
+
+    ChangeJS
+    {
+        id:   "wasLegacyMode"
+        name: "mode"
+        condition: function(options) { return options["legacyMode"] === true; }
+        jsFunction: function(options) { return "modern"; }
+    }
+
+    ChangeRemove
+    {
+        name: "legacyMode"
+        condition: "wasLegacyMode"
+    }
+}
+```
+
+## User Messages
+
+Optionally show a warning when an upgrade is applied:
+
+```qml
+Upgrade
+{
+    functionName: "MyAnalysis"
+    fromVersion:  "0.1"
+    toVersion:    "0.2"
+    msg:          qsTr("Options have been updated. Please review your settings.")
+
+    ChangeRename { from: "old"; to: "new" }
+}
+```
+
+Messages can also go on individual changes:
+
+```qml
+ChangeRemove { name: "dropped"; msg: qsTr("The 'dropped' option is no longer supported.") }
+```
+
+## Version Tying
+
+- The version in `Upgrades.qml` matches your **module version** (from `DESCRIPTION` and `Description.qml`), not the JASP version.
+- You do not need an `Upgrade` block for every module version — only for versions where options actually changed.
+- JASP chains through intermediate versions automatically.
+
+### Pre-0.15 Modules
+
+Modules that existed before JASP 0.15 (when versioning was managed by JASP itself) should use version `0.15` as the starting point and `0.14.3` as the `fromVersion` for the initial upgrade block.
+
+## When to Add Upgrades
+
+::: {.callout-tip}
+### Rule of Thumb
+If you change any option `name` in QML, add an `Upgrades.qml` entry. If you only add new options (with defaults), no upgrade is needed.
+:::
+
+- **Renamed option** → `ChangeRename`
+- **Removed option** → `ChangeRemove`
+- **Changed semantics** (e.g., radio button → checkboxes) → `ChangeJS`
+- **Added new option with default** → No upgrade needed (JASP fills in the default)
