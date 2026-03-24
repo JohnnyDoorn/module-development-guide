@@ -50,6 +50,8 @@ Consistent style makes code easier to review, maintain, and contribute to. JASP 
 
 ## QML Style Guide {#sec-qml-style}
 
+See the [QML Style Example](appendix-qml-style.qmd) appendix for a full annotated form.
+
 ### Formatting
 
 - **Indentation**: Tabs (4-space width).

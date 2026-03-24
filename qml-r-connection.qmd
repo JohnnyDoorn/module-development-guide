@@ -80,7 +80,7 @@ if (options[["meanDifference"]]) {
 }
 ```
 
-See @sec-coding-standards for naming conventions.
+See @sec-coding-standards for naming conventions and @sec-appendix-option-names for the full reference of standardised option names.
 
 ## Dependencies and caching
 

@@ -16,7 +16,7 @@ CIField  { name: "ciLevel"; enabled: showCi.checked }
 Wrap **all** user-visible text in `qsTr()` for translation support. Use `\uXXXX` for non-Latin characters.
 :::
 
-Follow the [QML style guide](appendix-qml-style.qmd) for formatting conventions.
+Follow the [QML style guide](appendix-qml-style.qmd) for formatting conventions and @sec-appendix-option-names for standardised option names.
 
 ## General input components {#sec-qml-input-components}
 
