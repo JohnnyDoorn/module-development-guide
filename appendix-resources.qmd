@@ -39,5 +39,5 @@ title: "Learning Resources"
 | Mattermost (team chat) | Contact the JASP team for an invitation |
 
 ::: {.callout-tip title="Get direct support from the JASP team"}
-If you are actively developing a JASP module, you can request an invitation to the **JASP Mattermost channel** — a team chat where you can ask questions, share progress, and get direct help from JASP developers. Contact the JASP team via [jasp-stats.org](https://jasp-stats.org) to request access.
+If you are actively developing a JASP module, you can request an invitation to the **JASP Mattermost channel** — a team chat where you can ask questions, share progress, and get direct help from JASP developers. Contact the JASP team at [info@jasp-stats.org](mailto:info@jasp-stats.org) to request access.
 :::
