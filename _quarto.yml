@@ -7,9 +7,9 @@ project:
 book:
   title: "JASP Module Development Guide"
   subtitle: "From first steps to publishing your module"
-  author: "JASP Development Team"
+  author: "JASP Team"
   date: last-modified
-  repo-url: https://github.com/jasp-stats/jasp-desktop
+  repo-url: https://github.com/jasp-stats/module-development-guide
   repo-actions: [issue]
   search: true
   sidebar:
